@@ -1,0 +1,5 @@
+.idea/
+data/input/*
+data/misc/*
+data/output/*
+data/working/*
