@@ -10,8 +10,8 @@ import torch.distributed as dist
 from torch.cuda.amp.grad_scaler import GradScaler
 from torch.nn.parallel import DistributedDataParallel as DDP
 
-from method_template.template_datamanager import TemplateDataManagerConfig
-from method_template.template_model import TemplateModel, TemplateModelConfig
+from silhouette_method.template_datamanager import TemplateDataManagerConfig
+from silhouette_method.template_model import TemplateModel, TemplateModelConfig
 from nerfstudio.data.datamanagers.base_datamanager import (
     DataManager,
     DataManagerConfig,

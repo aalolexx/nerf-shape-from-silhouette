@@ -6,11 +6,11 @@ Define your custom method here that registers with Nerfstudio CLI.
 
 from __future__ import annotations
 
-from method_template.template_datamanager import (
+from silhouette_method.template_datamanager import (
     TemplateDataManagerConfig,
 )
-from method_template.template_model import TemplateModelConfig
-from method_template.template_pipeline import (
+from silhouette_method.template_model import TemplateModelConfig
+from silhouette_method.template_pipeline import (
     TemplatePipelineConfig,
 )
 from nerfstudio.configs.base_config import ViewerConfig

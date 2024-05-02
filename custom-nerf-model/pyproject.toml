@@ -1,7 +1,7 @@
 [project]
 name = "custom-nerf-model"
 description = "Custom Nerfstudio method for creating 3D Meshed out of silhouette images. Based on nerfstudio-method-template"
-version = "0.1.0"
+version = "0.1.1"
 
 dependencies = ["nerfstudio >= 0.3.0"] 
 
