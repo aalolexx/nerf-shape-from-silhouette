@@ -1,7 +1,6 @@
 from pipeline_util.context import PipeContext
 from pipeline_util.pipeline import *
-from pipeline_steps.demo.DemoStep1 import DemoStep1
-from pipeline_steps.demo.DemoStep2 import DemoStep2
+from pipeline_steps.ImageBinarizer import ImageBinarizer
 
 
 #
@@ -29,8 +28,7 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
 def run_demo_pipeline():
     ctx = get_new_context()
     pipeline_pie = Pipeline[PipeContext](
-        DemoStep1(custom_msg='I am msg 1'),
-        DemoStep2(custom_msg='msg 2!')
+        ImageBinarizer('data/input/dog/Dog_RGB/', 'data/working/binarized_images/')
     )
     pipeline_pie(ctx, error_handler)
 
