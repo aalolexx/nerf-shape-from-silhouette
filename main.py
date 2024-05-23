@@ -1,6 +1,7 @@
 from pipeline_util.context import PipeContext
 from pipeline_util.pipeline import *
-from pipeline_steps.ImageBinarizer import ImageBinarizer
+from pipeline_steps.ImageBinarizerFacebook import ImageBinarizerFacebook
+from pipeline_steps.ImageBinarizerRMBG import ImageBinarizerRMBG
 from pipeline_steps.DepthEstimator import DepthEstimator
 
 
@@ -29,8 +30,9 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
 def run_demo_pipeline():
     ctx = get_new_context()
     pipeline_pie = Pipeline[PipeContext](
-        DepthEstimator('data/input/blendMVS/blended_images/', 'data/working/depth_images/', threshold=135),
-        ImageBinarizer('data/input/blendMVS/blended_images/', 'data/working/depth_images/', 'data/working/binarized_images/')
+        DepthEstimator('data/input/test-images/', 'data/working/depth_images/', threshold=110),
+        #ImageBinarizerFacebook('data/input/test-images/', 'data/working/depth_images/', 'data/working/binarized_images/')
+        ImageBinarizerRMBG('data/input/test-images/', 'data/working/depth_images/', 'data/working/binarized_images/')
     )
     pipeline_pie(ctx, error_handler)
 
