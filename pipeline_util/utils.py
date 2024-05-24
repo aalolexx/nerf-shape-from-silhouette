@@ -7,9 +7,9 @@ def load_and_resize_image(image_path, new_image_width):
     if input_image.mode != 'RGB':
         input_image = input_image.convert('RGB')
 
-    # Check if its to low
     new_width = new_image_width
     new_height = int(input_image.height * (new_width / input_image.width))
+
     return input_image.resize((new_width, new_height))
 
 def is_image(filename):

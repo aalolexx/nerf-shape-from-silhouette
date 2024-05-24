@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # TODO AEH use huggingface transformers here
 
-class ImageBinarizer:
+class ImageBinarizerFacebook:
     def __init__(self, images_raw_path: str,
                  images_depth_path: str,
                  images_segmented_path: str,
@@ -26,7 +26,9 @@ class ImageBinarizer:
         sam = sam_model_registry["default"](checkpoint="data/misc/sam_vit_h_4b8939.pth")
         mask_generator = SamAutomaticMaskGenerator(
             model=sam,
-            points_per_side=8
+            points_per_side=8,
+            min_mask_region_area=100,
+            box_nms_thresh=0.9
         )
 
         closing_kernel = np.ones((self._closing_kernel_size, self._closing_kernel_size), np.uint8)
@@ -41,7 +43,7 @@ class ImageBinarizer:
                 output_image_path = os.path.join(self._images_segmented_path, filename)
 
                 input_image = load_and_resize_image(input_image_path, 720)
-                depth_image = load_and_resize_image(depth_image_path, 720).convert("L") # make sure mask is grayscale
+                depth_image = load_and_resize_image(depth_image_path, 720).convert("L")  # make sure mask is grayscale
                 #depth_image.show()
 
                 black_image = Image.new('RGB', input_image.size, (0, 0, 0, 255))
