@@ -8,3 +8,5 @@ custom-nerf-model/outputs/*
 custom-nerf-model/*/outputs/*
 *.egg-info
 *__pycache__*
+*/*__pycache__*
+renders/

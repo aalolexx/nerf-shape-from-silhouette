@@ -1,9 +1,10 @@
-from PIL import Image
+from PIL import Image, ImageOps
 import os
 
 def load_and_resize_image(image_path, new_image_width):
     # Load Image
     input_image = Image.open(image_path)
+    input_image = ImageOps.exif_transpose(input_image)
     if input_image.mode != 'RGB':
         input_image = input_image.convert('RGB')
 
