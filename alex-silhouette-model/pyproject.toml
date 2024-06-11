@@ -1,0 +1,13 @@
+[project]
+name = "alex-silhouette-model"
+description = "Alex branch: Custom Nerfstudio method for creating 3D Meshed out of silhouette images. Based on nerfstudio-method-template"
+version = "0.1.0"
+
+dependencies = ["nerfstudio >= 0.3.0"]
+
+[tool.setuptools.packages.find]
+include = ["alex_silhouette_model*"]
+
+# register the entry point of your new method here:
+[project.entry-points.'nerfstudio.method_configs']
+alex-silhouette-model = 'alex_silhouette_model.custom_config:alex_silhouette_model'
