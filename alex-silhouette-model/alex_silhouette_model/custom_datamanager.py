@@ -36,7 +36,7 @@ class CustomDataManager(VanillaDataManager):
     def __init__(
         self,
         config: CustomDataManagerConfig,
-        device: Union[torch.device, str] = "cpu",
+        device: Union[torch.device, str] = "gpu",
         test_mode: Literal["test", "val", "inference"] = "val",
         world_size: int = 1,
         local_rank: int = 0,

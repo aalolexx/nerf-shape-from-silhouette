@@ -2,6 +2,7 @@ from pipeline_util.context import PipeContext
 from pipeline_util.pipeline import *
 #from pipeline_steps.ImageBinarizerFacebook import ImageBinarizerFacebook
 from pipeline_steps.ImageBinarizerRMBG import ImageBinarizerRMBG
+from pipeline_steps.ImageBinarizerRMBGNoDepth import ImageBinarizerRMBGNoDepth
 from pipeline_steps.DepthEstimator import DepthEstimator
 
 
@@ -25,9 +26,9 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
 
 
 #
-# Run actual Pipeline
+# Run actual Pipelines
 #
-def run_demo_pipeline():
+def run_pipeline_images_realworld():
     ctx = get_new_context()
     pipeline_pie = Pipeline[PipeContext](
         DepthEstimator('data/input/dnerf/hook/test', 'data/working/depth_images/hook/test', threshold=110),
@@ -40,6 +41,15 @@ def run_demo_pipeline():
     )
     pipeline_pie(ctx, error_handler)
 
+def run_pipeline_images_synthetic():
+    ctx = get_new_context()
+    pipeline_pie = Pipeline[PipeContext](
+        ImageBinarizerRMBGNoDepth('data/input/dnerf/hook/test', 'data/working/binarized_images_lowres/hook/test', target_width=256),
+        ImageBinarizerRMBGNoDepth('data/input/dnerf/hook/train', 'data/working/binarized_images_lowres/hook/train', target_width=256),
+        ImageBinarizerRMBGNoDepth('data/input/dnerf/hook/val', 'data/working/binarized_images_lowres/hook/val', target_width=256)
+    )
+    pipeline_pie(ctx, error_handler)
+
 
 if __name__ == '__main__':
-    run_demo_pipeline()
+    run_pipeline_images_synthetic()
