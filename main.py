@@ -51,5 +51,10 @@ def run_pipeline_images_synthetic():
     pipeline_pie(ctx, error_handler)
 
 
+def run_pipeline_silhouette_method():
+    ctx = get_new_context()
+    pipeline_pie = Pipeline[PipeContext]()
+    pipeline_pie(ctx, error_handler)
+
 if __name__ == '__main__':
-    run_pipeline_images_synthetic()
+    run_pipeline_silhouette_method()

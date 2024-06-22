@@ -4,11 +4,34 @@ Custom Model File
 Currently this subclasses the Nerfacto model. Consider subclassing from the base Model.
 """
 from dataclasses import dataclass, field
-from typing import Type
+from typing import Dict, List, Literal, Tuple, Type
 
 from nerfstudio.models.nerfacto import NerfactoModel, NerfactoModelConfig  # for subclassing Nerfacto model
 from nerfstudio.models.base_model import Model, ModelConfig  # for custom Model
+from nerfstudio.cameras.camera_optimizers import CameraOptimizer, CameraOptimizerConfig
+from nerfstudio.cameras.rays import RayBundle, RaySamples
+from nerfstudio.engine.callbacks import TrainingCallback, TrainingCallbackAttributes, TrainingCallbackLocation
+from nerfstudio.field_components.field_heads import FieldHeadNames
+from nerfstudio.field_components.spatial_distortions import SceneContraction
+from nerfstudio.fields.density_fields import HashMLPDensityField
+from nerfstudio.fields.nerfacto_field import NerfactoField
+from nerfstudio.model_components.losses import (
+    MSELoss,
+    distortion_loss,
+    interlevel_loss,
+    orientation_loss,
+    pred_normal_loss,
+    scale_gradients_by_distance_squared,
+)
+from nerfstudio.model_components.ray_samplers import ProposalNetworkSampler, UniformSampler
+from nerfstudio.model_components.renderers import AccumulationRenderer, DepthRenderer, NormalsRenderer, RGBRenderer
+from nerfstudio.model_components.scene_colliders import NearFarCollider
+from nerfstudio.model_components.shaders import NormalsShader
+from nerfstudio.models.base_model import Model, ModelConfig
+from nerfstudio.utils import colormaps
+import torch
 
+from alex_silhouette_model.renderer.custom_renderers import BWRenderer
 
 @dataclass
 class CustomModelConfig(NerfactoModelConfig):
@@ -28,5 +51,164 @@ class CustomModel(NerfactoModel):
     def populate_modules(self):
         super().populate_modules()
 
-    # TODO: Override any potential functions/methods to implement your own method
-    # or subclass from "Model" and define all mandatory fields.
+        # Replace RGB Renderer with Custom BW Renderer
+        self.renderer_bw = BWRenderer(background_color=self.config.background_color)
+
+    def get_outputs(self, ray_bundle: RayBundle):
+        # apply the camera optimizer pose tweaks
+        if self.training:
+            self.camera_optimizer.apply_to_raybundle(ray_bundle)
+        ray_samples: RaySamples
+        ray_samples, weights_list, ray_samples_list = self.proposal_sampler(ray_bundle, density_fns=self.density_fns)
+        field_outputs = self.field.forward(ray_samples, compute_normals=self.config.predict_normals)
+        if self.config.use_gradient_scaling:
+            field_outputs = scale_gradients_by_distance_squared(field_outputs, ray_samples)
+
+        weights = ray_samples.get_weights(field_outputs[FieldHeadNames.DENSITY])
+        weights_list.append(weights)
+        ray_samples_list.append(ray_samples)
+
+        # CHANGE
+        #rgb = self.renderer_rgb(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
+        bw = self.renderer_bw(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
+
+        # CHANGE
+
+
+        with torch.no_grad():
+            depth = self.renderer_depth(weights=weights, ray_samples=ray_samples)
+        expected_depth = self.renderer_expected_depth(weights=weights, ray_samples=ray_samples)
+        accumulation = self.renderer_accumulation(weights=weights)
+
+        outputs = {
+            # CHANGE
+            #"rgb": rgb,
+            "bw": bw,
+            "accumulation": accumulation,
+            "depth": depth,
+            "expected_depth": expected_depth,
+        }
+
+        if self.config.predict_normals:
+            normals = self.renderer_normals(normals=field_outputs[FieldHeadNames.NORMALS], weights=weights)
+            pred_normals = self.renderer_normals(field_outputs[FieldHeadNames.PRED_NORMALS], weights=weights)
+            outputs["normals"] = self.normals_shader(normals)
+            outputs["pred_normals"] = self.normals_shader(pred_normals)
+        # These use a lot of GPU memory, so we avoid storing them for eval.
+        if self.training:
+            outputs["weights_list"] = weights_list
+            outputs["ray_samples_list"] = ray_samples_list
+
+        if self.training and self.config.predict_normals:
+            outputs["rendered_orientation_loss"] = orientation_loss(
+                weights.detach(), field_outputs[FieldHeadNames.NORMALS], ray_bundle.directions
+            )
+
+            outputs["rendered_pred_normal_loss"] = pred_normal_loss(
+                weights.detach(),
+                field_outputs[FieldHeadNames.NORMALS].detach(),
+                field_outputs[FieldHeadNames.PRED_NORMALS],
+            )
+
+        for i in range(self.config.num_proposal_iterations):
+            outputs[f"prop_depth_{i}"] = self.renderer_depth(weights=weights_list[i], ray_samples=ray_samples_list[i])
+        return outputs
+
+    def get_loss_dict(self, outputs, batch, metrics_dict=None):
+        loss_dict = {}
+        image = batch["image"].to(self.device)
+        # CHANGE
+        pred_bw, gt_rgb = self.renderer_rgb.blend_background_for_loss_computation(
+            pred_image=outputs["bw"],
+            pred_accumulation=outputs["accumulation"],
+            gt_image=image,
+        )
+
+        # Change
+        gt_r = gt_rgb[:, 0]
+        pred_r = pred_bw[:, 0]
+        loss_dict["bw_loss"] = self.rgb_loss(gt_r, pred_r)
+        if self.training:
+            loss_dict["interlevel_loss"] = self.config.interlevel_loss_mult * interlevel_loss(
+                outputs["weights_list"], outputs["ray_samples_list"]
+            )
+            assert metrics_dict is not None and "distortion" in metrics_dict
+            loss_dict["distortion_loss"] = self.config.distortion_loss_mult * metrics_dict["distortion"]
+            if self.config.predict_normals:
+                # orientation loss for computed normals
+                loss_dict["orientation_loss"] = self.config.orientation_loss_mult * torch.mean(
+                    outputs["rendered_orientation_loss"]
+                )
+
+                # ground truth supervision for normals
+                loss_dict["pred_normal_loss"] = self.config.pred_normal_loss_mult * torch.mean(
+                    outputs["rendered_pred_normal_loss"]
+                )
+            # Add loss from camera optimizer
+            self.camera_optimizer.get_loss_dict(loss_dict)
+        return loss_dict
+
+
+    def get_metrics_dict(self, outputs, batch):
+        metrics_dict = {}
+        gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
+        gt_rgb = self.renderer_rgb.blend_background(gt_rgb)  # Blend if RGBA
+        predicted_bw = outputs["bw"]
+        metrics_dict["psnr"] = self.psnr(predicted_bw, gt_rgb)
+
+        if self.training:
+            metrics_dict["distortion"] = distortion_loss(outputs["weights_list"], outputs["ray_samples_list"])
+
+        self.camera_optimizer.get_metrics_dict(metrics_dict)
+        return metrics_dict
+
+    def get_image_metrics_and_images(
+        self, outputs: Dict[str, torch.Tensor], batch: Dict[str, torch.Tensor]
+    ) -> Tuple[Dict[str, float], Dict[str, torch.Tensor]]:
+        gt_rgb = batch["image"].to(self.device)
+        #predicted_rgb = outputs["rgb"]  # Blended with background (black if random background)
+
+        # CHANGE
+        predicted_bw = outputs["bw"]
+
+        gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
+        acc = colormaps.apply_colormap(outputs["accumulation"])
+        depth = colormaps.apply_depth_colormap(
+            outputs["depth"],
+            accumulation=outputs["accumulation"],
+        )
+
+        #combined_rgb = torch.cat([gt_rgb, predicted_rgb], dim=1)
+        combined_acc = torch.cat([acc], dim=1)
+        combined_depth = torch.cat([depth], dim=1)
+
+        # Switch images from [H, W, C] to [1, C, H, W] for metrics computations
+        gt_rgb = torch.moveaxis(gt_rgb, -1, 0)[None, ...]
+        #predicted_rgb = torch.moveaxis(predicted_rgb, -1, 0)[None, ...]
+
+        # CHANGE
+        psnr = self.psnr(gt_rgb, predicted_bw) #predicted_rgb)
+        ssim = self.ssim(gt_rgb, predicted_bw) #predicted_rgb)
+        lpips = self.lpips(gt_rgb, predicted_bw) #predicted_rgb)
+
+        # all of these metrics will be logged as scalars
+        metrics_dict = {"psnr": float(psnr.item()), "ssim": float(ssim)}  # type: ignore
+        metrics_dict["lpips"] = float(lpips)
+
+        # CHANGE
+        images_dict = {
+            #"img": combined_rgb,
+            "bw": predicted_bw,
+            "accumulation": combined_acc,
+            "depth": combined_depth
+        }
+
+        for i in range(self.config.num_proposal_iterations):
+            key = f"prop_depth_{i}"
+            prop_depth_i = colormaps.apply_depth_colormap(
+                outputs[key],
+                accumulation=outputs["accumulation"],
+            )
+            images_dict[key] = prop_depth_i
+
+        return metrics_dict, images_dict
