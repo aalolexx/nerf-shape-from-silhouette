@@ -10,3 +10,5 @@ custom-nerf-model/*/outputs/*
 *__pycache__*
 */*__pycache__*
 renders/
+/pipeline_steps/__pycache__
+/pipeline_steps/__pycache__/*

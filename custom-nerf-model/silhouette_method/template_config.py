@@ -28,7 +28,7 @@ silhouette_method = MethodSpecification(
         method_name="silhouette-method",
         steps_per_eval_batch=100,       # Reduce from 500 to 100
         steps_per_save=500,             # Reduce from 2000 to 500
-        max_num_iterations=5000,        # Reduce from 30000 to 5000
+        max_num_iterations=10000,        # Reduce from 30000 to 5000
         mixed_precision=True,
         pipeline=TemplatePipelineConfig(
             datamanager=TemplateDataManagerConfig(
@@ -38,6 +38,7 @@ silhouette_method = MethodSpecification(
             ),
             model=TemplateModelConfig(
                 eval_num_rays_per_chunk=1 << 12,  # Reduce from 1 << 15 to 1 << 12
+                average_init_density=0.01,
             ),
         ),
         optimizers={

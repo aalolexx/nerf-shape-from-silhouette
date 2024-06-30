@@ -8,4 +8,4 @@ class PipeContext:
     output_dir_path: str
     working_dir_path: str
     misc_dir_path: str
-    demo_context_var: int
+    log_file_path: str
