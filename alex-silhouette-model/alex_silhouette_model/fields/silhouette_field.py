@@ -58,3 +58,54 @@ class SilhouetteField(NerfactoField):
             implementation=kwargs.get('implementation'),
         )
 
+
+    # CHANGE
+    # Copied from nerfacto field but removed RGB Calculation
+    def get_outputs(
+        self, ray_samples: RaySamples, density_embedding: Optional[Tensor] = None
+    ) -> Dict[FieldHeadNames, Tensor]:
+        assert density_embedding is not None
+        outputs = {}
+        if ray_samples.camera_indices is None:
+            raise AttributeError("Camera indices are not provided.")
+        #camera_indices = ray_samples.camera_indices.squeeze()
+        directions = get_normalized_directions(ray_samples.frustums.directions)
+        directions_flat = directions.view(-1, 3)
+        #d = self.direction_encoding(directions_flat)
+
+        outputs_shape = ray_samples.frustums.directions.shape[:-1]
+
+        # appearance
+        # CHANGE
+        # removed appearance
+        # ...
+
+        # CHANGE
+        # removed transients
+        # ....
+
+        # semantics
+        if self.use_semantics:
+            semantics_input = density_embedding.view(-1, self.geo_feat_dim)
+            if not self.pass_semantic_gradients:
+                semantics_input = semantics_input.detach()
+
+            x = self.mlp_semantics(semantics_input).view(*outputs_shape, -1).to(directions)
+            outputs[FieldHeadNames.SEMANTICS] = self.field_head_semantics(x)
+
+        # predicted normals
+        if self.use_pred_normals:
+            positions = ray_samples.frustums.get_positions()
+
+            positions_flat = self.position_encoding(positions.view(-1, 3))
+            pred_normals_inp = torch.cat([positions_flat, density_embedding.view(-1, self.geo_feat_dim)], dim=-1)
+
+            x = self.mlp_pred_normals(pred_normals_inp).view(*outputs_shape, -1).to(directions)
+            outputs[FieldHeadNames.PRED_NORMALS] = self.field_head_pred_normals(x)
+
+        # CHANGE
+        # removed RGB output
+        # ....
+
+        return outputs
+

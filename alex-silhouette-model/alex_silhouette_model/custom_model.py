@@ -106,7 +106,7 @@ class CustomModel(NerfactoModel):
 
         # CHANGE
         #rgb = self.renderer_rgb(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
-        bw = self.renderer_bw(rgb=field_outputs[FieldHeadNames.RGB], weights=weights)
+        bw = self.renderer_bw(weights=weights, ray_samples=ray_samples)
 
         # CHANGE
 

@@ -27,10 +27,10 @@ class BWRenderer(nn.Module):
 
     @classmethod
     def combine_rgb(
-        cls,
-        rgb: Float[Tensor, "*bs num_samples 3"],
+        self,
         weights: Float[Tensor, "*bs num_samples 1"],
-    ) -> Float[Tensor, "*bs 3"]:
+        ray_samples: RaySamples,
+    ) -> Float[Tensor, "*bs 1"]:
         """Composite samples along ray and render color image.
         If background color is random, no BG color is added - as if the background was black!
 
@@ -50,15 +50,14 @@ class BWRenderer(nn.Module):
         # rgb.shape -> (1024, 48, 3) = (pixels/rays, samples, rgb)
         # weights.shape -> (1024, 48, 1) = (pixels/rays, samples, weight value)
         # comp_rgb.shape -> (1024, 3) = (pixels/rays, rgb)
-        accumulated_weight = torch.sum(weights, dim=-2)
-        comp_rgb = accumulated_weight.repeat(1, 3)
-
-        return comp_rgb
+        accumulated_weight = torch.sum(weights, dim=-2) #-2 = samples per ray (dimension)
+        accumulated_weight = torch.sigmoid(accumulated_weight)
+        return accumulated_weight
 
     @classmethod
     def get_background_color(
         cls, background_color: BackgroundColor, shape: Tuple[int, ...], device: torch.device
-    ) -> Union[Float[Tensor, "3"], Float[Tensor, "*bs 3"]]:
+    ) -> Union[Float[Tensor, "1"], Float[Tensor, "*bs 1"]]:
         """Returns the RGB background color for a specified background color.
         Note:
             This function CANNOT be called for background_color being either "last_sample" or "random".
@@ -74,13 +73,13 @@ class BWRenderer(nn.Module):
 
         # CHANGE
         # Ensure correct shape
-        return torch.tensor([0.0, 0.0, 0.0]).to(device)
+        return torch.tensor([0.0]).to(device)
 
     def blend_background(
         self,
         image: Tensor,
         background_color: Optional[BackgroundColor] = None,
-    ) -> Float[Tensor, "*bs 3"]:
+    ) -> Float[Tensor, "*bs 1"]:
         """Blends the background color into the image if image is RGBA.
         Otherwise no blending is performed (we assume opacity of 1).
 
@@ -95,7 +94,7 @@ class BWRenderer(nn.Module):
         if image.size(-1) < 4:
             return image
 
-        rgb, opacity = image[..., :3], image[..., 3:]
+        rgb, opacity = image[..., :1], image[..., 1:]
         background_color = self.get_background_color(self.background_color, shape=rgb.shape, device=rgb.device)
         assert isinstance(background_color, torch.Tensor)
         return rgb * opacity + background_color.to(rgb.device) * (1 - opacity)
@@ -121,11 +120,11 @@ class BWRenderer(nn.Module):
 
     def forward(
         self,
-        rgb: Float[Tensor, "*bs num_samples 3"],
         weights: Float[Tensor, "*bs num_samples 1"],
+        ray_samples: RaySamples,
         ray_indices: Optional[Int[Tensor, "num_samples"]] = None,
         num_rays: Optional[int] = None,
-    ) -> Float[Tensor, "*bs 3"]:
+    ) -> Float[Tensor, "*bs 1"]:
         """Composite samples along ray and render color image
 
         Args:
@@ -139,10 +138,7 @@ class BWRenderer(nn.Module):
             Outputs of rgb values.
         """
 
-        if not self.training:
-            rgb = torch.nan_to_num(rgb)
-
-        rgb = self.combine_rgb(rgb, weights)
+        rgb = self.combine_rgb(weights, ray_samples)
 
         if not self.training:
             torch.clamp_(rgb, min=0.0, max=1.0)
