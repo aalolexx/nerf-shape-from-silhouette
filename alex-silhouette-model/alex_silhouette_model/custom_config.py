@@ -56,7 +56,10 @@ alex_silhouette_model = MethodSpecification(
             "scheduler": ExponentialDecaySchedulerConfig(lr_final=1e-4, max_steps=5000),
         },
     },
-    viewer=ViewerConfig(num_rays_per_chunk=1 << 12),  # 15
+    viewer=ViewerConfig(
+        #num_rays_per_chunk=1 << 12, # 15
+        quit_on_train_completion=True
+    ),
     vis="viewer",
   ),
   description="Custom description"

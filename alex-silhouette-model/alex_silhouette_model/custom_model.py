@@ -166,14 +166,13 @@ class CustomModel(NerfactoModel):
     def get_image_metrics_and_images(
         self, outputs: Dict[str, torch.Tensor], batch: Dict[str, torch.Tensor]
     ) -> Tuple[Dict[str, float], Dict[str, torch.Tensor]]:
-        gt_rgb = batch["image"].to(self.device)
         #predicted_rgb = outputs["rgb"]  # Blended with background (black if random background)
 
         # CHANGE
         predicted_bw = outputs["bw"]
 
-        #gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
+        #gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
 
         acc = colormaps.apply_colormap(outputs["accumulation"])
         depth = colormaps.apply_depth_colormap(
@@ -190,10 +189,6 @@ class CustomModel(NerfactoModel):
         gt_rgb = torch.moveaxis(gt_rgb, -1, 0)[None, ...]
         predicted_bw = torch.moveaxis(predicted_bw, -1, 0)[None, ...]
 
-        print("---")
-        print(gt_rgb.shape)
-        print(predicted_bw.shape)
-
         # CHANGE
         psnr = self.psnr(gt_rgb, predicted_bw) #predicted_rgb)
         ssim = self.ssim(gt_rgb, predicted_bw) #predicted_rgb)
@@ -202,8 +197,6 @@ class CustomModel(NerfactoModel):
         # all of these metrics will be logged as scalars
         metrics_dict = {"psnr": float(psnr.item()), "ssim": float(ssim)}  # type: ignore
         metrics_dict["lpips"] = float(lpips)
-
-        print("AAAAAAA")
 
         # CHANGE
         images_dict = {

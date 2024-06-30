@@ -5,7 +5,6 @@ from pipeline_util.utils import *
 import subprocess
 
 from nerfstudio.scripts.train import main
-from nerfstudio.engine import trainer
 from termcolor import cprint
 from pathlib import Path
 
@@ -28,7 +27,7 @@ class NerfstudioTrainStarter:
         data_path = Path(self._data_path)
         conf.method_name = self._model
         conf.pipeline.datamanager.data = data_path
-        conf.vis = 'viewer'
+
         main(conf)
 
         # Call the next module
