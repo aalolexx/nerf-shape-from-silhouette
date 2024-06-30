@@ -30,9 +30,6 @@ class BWRenderer(nn.Module):
         cls,
         rgb: Float[Tensor, "*bs num_samples 3"],
         weights: Float[Tensor, "*bs num_samples 1"],
-        background_color: BackgroundColor = "random",
-        ray_indices: Optional[Int[Tensor, "num_samples"]] = None,
-        num_rays: Optional[int] = None,
     ) -> Float[Tensor, "*bs 3"]:
         """Composite samples along ray and render color image.
         If background color is random, no BG color is added - as if the background was black!
@@ -56,19 +53,6 @@ class BWRenderer(nn.Module):
         accumulated_weight = torch.sum(weights, dim=-2)
         comp_rgb = accumulated_weight.repeat(1, 3)
 
-        #if BACKGROUND_COLOR_OVERRIDE is not None:
-        #    background_color = BACKGROUND_COLOR_OVERRIDE
-        #if background_color == "random":
-        #    # If background color is random, the predicted color is returned without blending,
-        #    # as if the background color was black.
-        #    return comp_rgb
-        #elif background_color == "last_sample":
-        #    # Note, this is only supported for non-packed samples.
-        #    background_color = rgb[..., -1, :]
-        #background_color = cls.get_background_color(background_color, shape=comp_rgb.shape, device=comp_rgb.device)
-
-        #assert isinstance(background_color, torch.Tensor)
-        #comp_rgb = comp_rgb + background_color * (1.0 - accumulated_weight)
         return comp_rgb
 
     @classmethod
@@ -112,11 +96,7 @@ class BWRenderer(nn.Module):
             return image
 
         rgb, opacity = image[..., :3], image[..., 3:]
-        if background_color is None:
-            background_color = self.background_color
-            if background_color in {"last_sample", "random"}:
-                background_color = "black"
-        background_color = self.get_background_color(background_color, shape=rgb.shape, device=rgb.device)
+        background_color = self.get_background_color(self.background_color, shape=rgb.shape, device=rgb.device)
         assert isinstance(background_color, torch.Tensor)
         return rgb * opacity + background_color.to(rgb.device) * (1 - opacity)
 
@@ -136,13 +116,7 @@ class BWRenderer(nn.Module):
         Returns:
             A tuple of the predicted and ground truth RGB values.
         """
-        background_color = self.background_color
-        if background_color == "last_sample":
-            background_color = "black"  # No background blending for GT
-        elif background_color == "random":
-            background_color = torch.rand_like(pred_image)
-            pred_image = pred_image + background_color * (1.0 - pred_accumulation)
-        gt_image = self.blend_background(gt_image, background_color=background_color)
+        gt_image = self.blend_background(gt_image, background_color=self.background_color)
         return pred_image, gt_image
 
     def forward(
@@ -151,7 +125,6 @@ class BWRenderer(nn.Module):
         weights: Float[Tensor, "*bs num_samples 1"],
         ray_indices: Optional[Int[Tensor, "num_samples"]] = None,
         num_rays: Optional[int] = None,
-        background_color: Optional[BackgroundColor] = None,
     ) -> Float[Tensor, "*bs 3"]:
         """Composite samples along ray and render color image
 
@@ -166,14 +139,12 @@ class BWRenderer(nn.Module):
             Outputs of rgb values.
         """
 
-        if background_color is None:
-            background_color = self.background_color
-
         if not self.training:
             rgb = torch.nan_to_num(rgb)
-        rgb = self.combine_rgb(
-            rgb, weights, background_color="black", ray_indices=ray_indices, num_rays=num_rays
-        )
+
+        rgb = self.combine_rgb(rgb, weights)
+
         if not self.training:
             torch.clamp_(rgb, min=0.0, max=1.0)
+
         return rgb

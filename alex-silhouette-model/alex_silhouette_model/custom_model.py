@@ -30,8 +30,11 @@ from nerfstudio.model_components.shaders import NormalsShader
 from nerfstudio.models.base_model import Model, ModelConfig
 from nerfstudio.utils import colormaps
 import torch
+import torch.nn as nn
 
 from alex_silhouette_model.renderer.custom_renderers import BWRenderer
+from alex_silhouette_model.loss.custom_losses import HammingDistance
+from alex_silhouette_model.fields.silhouette_field import SilhouetteField
 
 @dataclass
 class CustomModelConfig(NerfactoModelConfig):
@@ -51,8 +54,41 @@ class CustomModel(NerfactoModel):
     def populate_modules(self):
         super().populate_modules()
 
+        # Instead of using rgb_loss (MSELoss), use a custom binary loss (Hamming Distance)
+        #self.bw_loss = HammingDistance()
+        self.bw_loss = nn.MSELoss()
+
         # Replace RGB Renderer with Custom BW Renderer
-        self.renderer_bw = BWRenderer(background_color=self.config.background_color)
+        self.renderer_bw = BWRenderer(background_color='black')
+
+        # Custom Field instead of Nerfacto Field (Still inherited from nerfacto tho)
+        # Fields
+
+        if self.config.disable_scene_contraction:
+            scene_contraction = None
+        else:
+            scene_contraction = SceneContraction(order=float("inf"))
+
+        appearance_embedding_dim = self.config.appearance_embed_dim if self.config.use_appearance_embedding else 0
+
+        self.field = SilhouetteField(
+            self.scene_box.aabb,
+            hidden_dim=self.config.hidden_dim,
+            num_levels=self.config.num_levels,
+            max_res=self.config.max_res,
+            base_res=self.config.base_res,
+            features_per_level=self.config.features_per_level,
+            log2_hashmap_size=self.config.log2_hashmap_size,
+            hidden_dim_color=self.config.hidden_dim_color,
+            hidden_dim_transient=self.config.hidden_dim_transient,
+            spatial_distortion=scene_contraction,
+            num_images=self.num_train_data,
+            use_pred_normals=self.config.predict_normals,
+            use_average_appearance_embedding=self.config.use_average_appearance_embedding,
+            appearance_embedding_dim=appearance_embedding_dim,
+            average_init_density=self.config.average_init_density,
+            implementation=self.config.implementation,
+        )
 
     def get_outputs(self, ray_bundle: RayBundle):
         # apply the camera optimizer pose tweaks
@@ -127,7 +163,8 @@ class CustomModel(NerfactoModel):
         # Change
         gt_r = gt_rgb[:, 0]
         pred_r = pred_bw[:, 0]
-        loss_dict["bw_loss"] = self.rgb_loss(gt_r, pred_r)
+        loss_dict["bw_loss"] = self.bw_loss(gt_r, pred_r)
+
         if self.training:
             loss_dict["interlevel_loss"] = self.config.interlevel_loss_mult * interlevel_loss(
                 outputs["weights_list"], outputs["ray_samples_list"]

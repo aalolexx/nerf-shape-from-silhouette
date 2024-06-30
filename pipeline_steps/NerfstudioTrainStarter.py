@@ -20,7 +20,7 @@ class NerfstudioTrainStarter:
 
     def __call__(self, context: Context, next_step: NextStep) -> None:
 
-        command = f"ns-train {self._model} --data {self._data_path} --vis tensorboard"
+        command = f"ns-train {self._model} --data {self._data_path} --vis viewer"
         cprint(command, "yellow")
 
         conf = custom_config.alex_silhouette_model.config
