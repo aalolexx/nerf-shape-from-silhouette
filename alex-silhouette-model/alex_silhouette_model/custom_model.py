@@ -151,8 +151,9 @@ class CustomModel(NerfactoModel):
 
     def get_metrics_dict(self, outputs, batch):
         metrics_dict = {}
+        # CHANGE
+        # gt_rgb = self.renderer_rgb.blend_background(gt_rgb)  # Blend if RGBA
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
-        gt_rgb = self.renderer_rgb.blend_background(gt_rgb)  # Blend if RGBA
         predicted_bw = outputs["bw"]
         metrics_dict["psnr"] = self.psnr(predicted_bw, gt_rgb)
 
@@ -171,20 +172,27 @@ class CustomModel(NerfactoModel):
         # CHANGE
         predicted_bw = outputs["bw"]
 
-        gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
+        #gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
+        gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
+
         acc = colormaps.apply_colormap(outputs["accumulation"])
         depth = colormaps.apply_depth_colormap(
             outputs["depth"],
             accumulation=outputs["accumulation"],
         )
 
-        #combined_rgb = torch.cat([gt_rgb, predicted_rgb], dim=1)
+        combined_bw = torch.cat([gt_rgb, predicted_bw], dim=1)
         combined_acc = torch.cat([acc], dim=1)
         combined_depth = torch.cat([depth], dim=1)
 
         # Switch images from [H, W, C] to [1, C, H, W] for metrics computations
+        # CHANGE
         gt_rgb = torch.moveaxis(gt_rgb, -1, 0)[None, ...]
-        #predicted_rgb = torch.moveaxis(predicted_rgb, -1, 0)[None, ...]
+        predicted_bw = torch.moveaxis(predicted_bw, -1, 0)[None, ...]
+
+        print("---")
+        print(gt_rgb.shape)
+        print(predicted_bw.shape)
 
         # CHANGE
         psnr = self.psnr(gt_rgb, predicted_bw) #predicted_rgb)
@@ -195,9 +203,11 @@ class CustomModel(NerfactoModel):
         metrics_dict = {"psnr": float(psnr.item()), "ssim": float(ssim)}  # type: ignore
         metrics_dict["lpips"] = float(lpips)
 
+        print("AAAAAAA")
+
         # CHANGE
         images_dict = {
-            #"img": combined_rgb,
+            "img": combined_bw,
             "bw": predicted_bw,
             "accumulation": combined_acc,
             "depth": combined_depth

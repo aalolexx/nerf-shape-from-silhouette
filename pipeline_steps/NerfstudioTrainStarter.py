@@ -28,7 +28,7 @@ class NerfstudioTrainStarter:
         data_path = Path(self._data_path)
         conf.method_name = self._model
         conf.pipeline.datamanager.data = data_path
-        conf.vis = 'tensorboard'
+        conf.vis = 'viewer'
         main(conf)
 
         # Call the next module

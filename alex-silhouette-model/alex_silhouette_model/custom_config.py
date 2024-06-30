@@ -57,7 +57,7 @@ alex_silhouette_model = MethodSpecification(
         },
     },
     viewer=ViewerConfig(num_rays_per_chunk=1 << 12),  # 15
-    vis="tensorboard",
+    vis="viewer",
   ),
   description="Custom description"
 )
