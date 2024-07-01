@@ -27,6 +27,7 @@ from nerfstudio.plugins.types import MethodSpecification
 alex_silhouette_model = MethodSpecification(
   config=TrainerConfig(
     method_name="alex-silhouette-model",
+    timestamp="{timestamp}",
     steps_per_eval_batch=100,  # 500,
     steps_per_save=500,  # 2000,
     max_num_iterations=10000,  # 30000,
@@ -40,6 +41,10 @@ alex_silhouette_model = MethodSpecification(
         model=CustomModelConfig(
             eval_num_rays_per_chunk=1 << 12,  # 15
             average_init_density=0.01,
+            # Our newly introduced options
+            use_optimized_sigmoid=True,
+            use_weight_prioritization=True,
+            loss_method='L1'
         ),
     ),
     optimizers={

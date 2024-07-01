@@ -43,6 +43,10 @@ class CustomModelConfig(NerfactoModelConfig):
     Add your custom model config parameters here.
     """
 
+    use_optimized_sigmoid: bool = True
+    use_weight_prioritization: bool = True
+    loss_method: str = 'MSE'
+
     _target: Type = field(default_factory=lambda: CustomModel)
 
 
@@ -56,10 +60,18 @@ class CustomModel(NerfactoModel):
 
         # Instead of using rgb_loss (MSELoss), use a custom binary loss (Hamming Distance)
         #self.bw_loss = HammingDistance()
-        self.bw_loss = nn.MSELoss()
+
+        if self.config.loss_method == 'L1':
+            print("--- Loss Method: L1")
+            self.bw_loss = nn.L1Loss()
+        else:
+            print("--- Loss Method: MSE")
+            self.bw_loss = nn.MSELoss()
 
         # Replace RGB Renderer with Custom BW Renderer
-        self.renderer_bw = BWRenderer(background_color='black')
+        self.renderer_bw = BWRenderer(background_color='black',
+                                      use_optimized_sigmoid=self.config.use_optimized_sigmoid,
+                                      use_weight_prioritization=self.config.use_weight_prioritization)
 
         # Custom Field instead of Nerfacto Field (Still inherited from nerfacto tho)
         # Fields

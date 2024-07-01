@@ -14,6 +14,7 @@ from nerfstudio.utils.math import components_from_spherical_harmonics, safe_norm
 BackgroundColor = Union[Literal["random", "last_sample", "black", "white"], Float[Tensor, "3"], Float[Tensor, "*bs 3"]]
 BACKGROUND_COLOR_OVERRIDE: Optional[Float[Tensor, "3"]] = None
 
+
 class BWRenderer(nn.Module):
     """Standard volumetric rendering.
 
@@ -21,11 +22,27 @@ class BWRenderer(nn.Module):
         background_color: Background color as RGB. Uses random colors if None.
     """
 
-    def __init__(self, background_color: BackgroundColor = "random") -> None:
-        super().__init__()
-        self.background_color: BackgroundColor = background_color
+    def __init__(self,
+                 background_color: BackgroundColor = "random",
+                 use_optimized_sigmoid: bool = True,
+                 use_weight_prioritization: bool = True) -> None:
 
-    @classmethod
+        super().__init__()
+
+        self.background_color: BackgroundColor = background_color
+        self.use_optimized_sigmoid = use_optimized_sigmoid
+        self.use_weight_prioritization = use_weight_prioritization
+
+    def improved_sigmoid(self, x):
+        # return 1/(1+math.exp(-x * c + a))
+        c = 8.4
+        a = 4.2
+        return 1 / (1 + torch.exp((-1 * x) * c + a))
+
+
+    def weight_priority_function(self, x):
+        return -1 * torch.pow(x * 1.4 - 0.6, 2) + 1.2
+
     def combine_rgb(
         self,
         weights: Float[Tensor, "*bs num_samples 1"],
@@ -50,13 +67,26 @@ class BWRenderer(nn.Module):
         # rgb.shape -> (1024, 48, 3) = (pixels/rays, samples, rgb)
         # weights.shape -> (1024, 48, 1) = (pixels/rays, samples, weight value)
         # comp_rgb.shape -> (1024, 3) = (pixels/rays, rgb)
-        accumulated_weight = torch.sum(weights, dim=-2) #-2 = samples per ray (dimension)
-        accumulated_weight = torch.sigmoid(accumulated_weight)
+
+        # Create an index tensor of the weights, for later prioritizing of the weights
+        pixel_dim, sample_dim, value_dim = weights.shape
+        weight_index = torch.arange(sample_dim).view(1, sample_dim, value_dim).expand(pixel_dim, sample_dim, value_dim)
+        weight_index = weight_index / sample_dim  # normalize
+        weight_priorities = self.weight_priority_function(weight_index).to(weights.device)
+
+        # Apply Weight Priorization and sum along ray to get color value (Value between 0 and 1)
+        if self.use_weight_prioritization:
+            accumulated_weight = torch.sum(torch.multiply(weights, weight_priorities), dim=-2)  # -2 = samples per ray (dimension)
+        else:
+            accumulated_weight = torch.sum(weights, dim=-2)  # -2 = samples per ray (dimension)
+
+        if self.use_optimized_sigmoid:
+            accumulated_weight = self.improved_sigmoid(accumulated_weight)
+
         return accumulated_weight
 
-    @classmethod
     def get_background_color(
-        cls, background_color: BackgroundColor, shape: Tuple[int, ...], device: torch.device
+        self, background_color: BackgroundColor, shape: Tuple[int, ...], device: torch.device
     ) -> Union[Float[Tensor, "1"], Float[Tensor, "*bs 1"]]:
         """Returns the RGB background color for a specified background color.
         Note:
