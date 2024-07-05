@@ -34,6 +34,9 @@ import torch.nn as nn
 
 from alex_silhouette_model.renderer.custom_renderers import BWRenderer
 from alex_silhouette_model.loss.custom_losses import HammingDistance
+from alex_silhouette_model.loss.custom_losses import CharbonnierLoss
+from alex_silhouette_model.loss.custom_losses import DiceLoss
+from alex_silhouette_model.loss.custom_losses import TverskyLoss
 from alex_silhouette_model.fields.silhouette_field import SilhouetteField
 
 @dataclass
@@ -61,12 +64,30 @@ class CustomModel(NerfactoModel):
         # Instead of using rgb_loss (MSELoss), use a custom binary loss (Hamming Distance)
         #self.bw_loss = HammingDistance()
 
+
         if self.config.loss_method == 'L1':
             print("--- Loss Method: L1")
             self.bw_loss = nn.L1Loss()
+        elif self.config.loss_method == 'SmoothL1':
+            print("--- Loss Method: SmoothL1")
+            self.bw_loss = nn.SmoothL1Loss()
+        elif self.config.loss_method == 'KLDiv':
+            print("--- Loss Method: KLDiv")
+            self.bw_loss = nn.KLDivLoss(size_average=None, reduce=None, reduction='mean', log_target=False)
+        elif self.config.loss_method == 'Charbonnier':
+            print("--- Loss Method: Charbonnier")
+            self.bw_loss = CharbonnierLoss()
+        elif self.config.loss_method == 'BCEWithLogits':
+            print("--- Loss Method: BCEWithLogits")
+            self.bw_loss = nn.BCEWithLogitsLoss()
+        elif self.config.loss_method == 'Tversky':
+            print("--- Loss Method: Tversky")
+            self.bw_loss = TverskyLoss()
         else:
             print("--- Loss Method: MSE")
             self.bw_loss = nn.MSELoss()
+
+        #self.bw_loss = DiceLoss()
 
         # Replace RGB Renderer with Custom BW Renderer
         self.renderer_bw = BWRenderer(background_color='black',
@@ -175,6 +196,7 @@ class CustomModel(NerfactoModel):
         # Change
         gt_r = gt_rgb[:, 0]
         pred_r = pred_bw[:, 0]
+
         loss_dict["bw_loss"] = self.bw_loss(gt_r, pred_r)
 
         if self.training:
