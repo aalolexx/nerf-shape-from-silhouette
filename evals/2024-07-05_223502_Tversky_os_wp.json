@@ -1,0 +1,17 @@
+{
+  "experiment_name": "dnerf-hook-bin",
+  "method_name": "alex-silhouette-model",
+  "checkpoint": "outputs\\dnerf-hook-bin\\alex-silhouette-model\\2024-07-05_223502_Tversky_os_wp\\nerfstudio_models\\step-000009999.ckpt",
+  "results": {
+    "psnr": 0.8761608004570007,
+    "psnr_std": 0.2362399846315384,
+    "ssim": 0.11587679386138916,
+    "ssim_std": 0.014244315214455128,
+    "lpips": 0.7394570112228394,
+    "lpips_std": 0.01822575181722641,
+    "num_rays_per_sec": 43836.046875,
+    "num_rays_per_sec_std": 819.021240234375,
+    "fps": 0.08456027507781982,
+    "fps_std": 0.001579901552759111
+  }
+}

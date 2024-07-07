@@ -225,8 +225,9 @@ class CustomModel(NerfactoModel):
         # CHANGE
         # gt_rgb = self.renderer_rgb.blend_background(gt_rgb)  # Blend if RGBA
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
-        predicted_bw = outputs["bw"]
-        metrics_dict["psnr"] = self.psnr(predicted_bw, gt_rgb)
+        bw_rgb = outputs["bw"].expand(-1, -1, 3)
+        #predicted_bw = outputs["bw"]
+        metrics_dict["psnr"] = self.psnr(bw_rgb, gt_rgb)
 
         if self.training:
             metrics_dict["distortion"] = distortion_loss(outputs["weights_list"], outputs["ray_samples_list"])
@@ -240,7 +241,7 @@ class CustomModel(NerfactoModel):
         #predicted_rgb = outputs["rgb"]  # Blended with background (black if random background)
 
         # CHANGE
-        predicted_bw = outputs["bw"]
+        predicted_bw = outputs["bw"].expand(-1, -1, 3) # unsqueeze to RGB again for image evaluation
 
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
         #gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
