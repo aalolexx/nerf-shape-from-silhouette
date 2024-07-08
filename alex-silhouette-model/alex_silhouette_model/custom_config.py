@@ -43,7 +43,9 @@ alex_silhouette_model = MethodSpecification(
             average_init_density=0.01,
             # Our newly introduced options
             use_optimized_sigmoid=True,
-            use_weight_prioritization=True,
+            use_weight_prioritization=False,
+            renderer_sig_range=10.0,
+            renderer_sig_offset=5.0,
             loss_method='L1'
         ),
     ),

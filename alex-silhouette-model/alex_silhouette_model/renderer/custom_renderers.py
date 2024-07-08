@@ -25,18 +25,23 @@ class BWRenderer(nn.Module):
     def __init__(self,
                  background_color: BackgroundColor = "random",
                  use_optimized_sigmoid: bool = True,
-                 use_weight_prioritization: bool = True) -> None:
+                 use_weight_prioritization: bool = True,
+                 sig_range: float = 8.4,
+                 sig_offset: float = 4.2
+                 ) -> None:
 
         super().__init__()
 
         self.background_color: BackgroundColor = background_color
         self.use_optimized_sigmoid = use_optimized_sigmoid
         self.use_weight_prioritization = use_weight_prioritization
+        self.sig_range = sig_range
+        self.sig_offset = sig_offset
 
     def improved_sigmoid(self, x):
         # return 1/(1+math.exp(-x * c + a))
-        c = 8.4
-        a = 4.2
+        c = self.sig_range
+        a = self.sig_offset
         return 1 / (1 + torch.exp((-1 * x) * c + a))
 
 
@@ -83,7 +88,7 @@ class BWRenderer(nn.Module):
         if self.use_optimized_sigmoid:
             accumulated_weight = self.improved_sigmoid(accumulated_weight)
 
-        return accumulated_weight
+        return accumulated_weight  # Shape 4096, 1
 
     def get_background_color(
         self, background_color: BackgroundColor, shape: Tuple[int, ...], device: torch.device

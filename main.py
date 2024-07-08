@@ -60,7 +60,7 @@ def run_pipeline_images_synthetic():
     pipeline_pie(ctx, error_handler)
 
 
-def run_pipeline_silhouette_method():
+def run_pipeline_test_loss_methods():
     input_data_path = "data/input/dnerf-hook-bin"
     ctx = get_new_context()
     pipeline_pie = Pipeline[PipeContext](
@@ -181,5 +181,84 @@ def run_pipeline_silhouette_method():
     )
     pipeline_pie(ctx, error_handler)
 
+
+def run_pipeline_test_sig_params():
+    input_data_path = "data/input/dnerf-hook-bin"
+    ctx = get_new_context()
+    pipeline_pie = Pipeline[PipeContext](
+        Protocoller("prepared dataset"),
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=5.0,
+                               renderer_sig_offset=0.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r5_o0",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=5.0, offset=4.0"),
+
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=10.0,
+                               renderer_sig_offset=0.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r10_o0",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=10.0, offset=0.0"),
+
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=15.0,
+                               renderer_sig_offset=0.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r15_o0",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=15.0, offset=0.0"),
+
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=5.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r5_o5",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=5.0, offset=5.0"),
+
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=10.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r10_o5",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=10.0, offset=5.0"),
+
+        NerfstudioTrainStarter(model="alex-silhouette-model",
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=15.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               export_postfix="_l1_r15_o5",
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=15.0, offset=5.0"),
+
+
+
+        ProtocolAnalyzer(),
+    )
+    pipeline_pie(ctx, error_handler)
+
+
 if __name__ == "__main__":
-    run_pipeline_silhouette_method()
+    run_pipeline_test_sig_params()

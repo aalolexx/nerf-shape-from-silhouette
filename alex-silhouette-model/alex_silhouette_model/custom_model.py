@@ -48,6 +48,8 @@ class CustomModelConfig(NerfactoModelConfig):
 
     use_optimized_sigmoid: bool = True
     use_weight_prioritization: bool = True
+    renderer_sig_range: float = 8.0
+    renderer_sig_offset: float = 4.0
     loss_method: str = 'MSE'
 
     _target: Type = field(default_factory=lambda: CustomModel)
@@ -92,7 +94,9 @@ class CustomModel(NerfactoModel):
         # Replace RGB Renderer with Custom BW Renderer
         self.renderer_bw = BWRenderer(background_color='black',
                                       use_optimized_sigmoid=self.config.use_optimized_sigmoid,
-                                      use_weight_prioritization=self.config.use_weight_prioritization)
+                                      use_weight_prioritization=self.config.use_weight_prioritization,
+                                      sig_range=self.config.renderer_sig_range,
+                                      sig_offset=self.config.renderer_sig_offset)
 
         # Custom Field instead of Nerfacto Field (Still inherited from nerfacto tho)
         # Fields
@@ -225,9 +229,11 @@ class CustomModel(NerfactoModel):
         # CHANGE
         # gt_rgb = self.renderer_rgb.blend_background(gt_rgb)  # Blend if RGBA
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
-        bw_rgb = outputs["bw"].expand(-1, -1, 3)
+        #bw_rgb = outputs["bw"].expand(-1, -1, 3) <-- use this one for ns-eval
+        bw_pred = outputs["bw"]
+
         #predicted_bw = outputs["bw"]
-        metrics_dict["psnr"] = self.psnr(bw_rgb, gt_rgb)
+        metrics_dict["psnr"] = self.psnr(bw_pred, gt_rgb)
 
         if self.training:
             metrics_dict["distortion"] = distortion_loss(outputs["weights_list"], outputs["ray_samples_list"])
