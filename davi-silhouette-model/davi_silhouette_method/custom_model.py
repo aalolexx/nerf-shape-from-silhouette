@@ -99,6 +99,8 @@ class CustomModel(NerfactoModel):
         # TODO: change away entirely from rgb
         self.renderer_binary = custom_renderers.BinaryRenderer()
 
+        self.renderer_normals = NormalsRenderer()
+
     def get_outputs(self, ray_bundle: RayBundle):
         # apply the camera optimizer pose tweaks
         if self.training:

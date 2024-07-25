@@ -122,7 +122,7 @@ class TSDF:
         tsdf_values_np = self.values.clamp(-1, 1).cpu().numpy()
         vertices, faces, normals, _ = measure.marching_cubes(
             tsdf_values_np,
-            level=.1,
+            level=0,
             allow_degenerate=True  # Ensure this is set to True
         )
 

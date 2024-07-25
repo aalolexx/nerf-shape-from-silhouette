@@ -97,6 +97,9 @@ class CustomModel(NerfactoModel):
                                       use_weight_prioritization=self.config.use_weight_prioritization,
                                       sig_range=self.config.renderer_sig_range,
                                       sig_offset=self.config.renderer_sig_offset)
+        
+        self.normals_renderer = NormalsRenderer()
+        self.normals_shader = NormalsShader()
 
         # Custom Field instead of Nerfacto Field (Still inherited from nerfacto tho)
         # Fields

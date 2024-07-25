@@ -1,8 +1,10 @@
 navigate to:
 cd L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin
 run
-python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\unnamed\alex-silhouette-model\2024-07-15_221757\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-alex
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py tsdf --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\unnamed\alex-silhouette-model\2024-07-15_221757\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-alex
 
-python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\dnerf-hook-bin\alex-silhouette-model\2024-07-05_213656_L1_os_wp\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-alex
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py tsdf --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\dnerf-hook-bin\alex-silhouette-model\2024-07-05_213656_L1_os_wp\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-alex
 
-python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\unnamed\davi-silhouette-method\2024-06-24_203528\config.yml --rgb_output_name accumulation --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-davi
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py poisson --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\dnerf-hook-bin\alex-silhouette-model\2024-07-25_001016\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\poisson\n-alex
+
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py tsdf --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\unnamed\davi-silhouette-method\2024-06-24_203528\config.yml --rgb_output_name accumulation --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-davi

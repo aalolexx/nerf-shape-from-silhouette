@@ -48,6 +48,7 @@ davi_silhouette_model = MethodSpecification(
                 background_color="black",
                 # some more for quick rendering:
                 base_res=8,
+                predict_normals=True,
             ),
         ),
         optimizers={

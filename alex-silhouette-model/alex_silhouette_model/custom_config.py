@@ -46,7 +46,8 @@ alex_silhouette_model = MethodSpecification(
             use_weight_prioritization=False,
             renderer_sig_range=10.0,
             renderer_sig_offset=5.0,
-            loss_method='L1'
+            loss_method='L1',
+            predict_normals=True,
         ),
     ),
     optimizers={
