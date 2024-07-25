@@ -37,10 +37,12 @@ class NerfstudioTrainStarter:
         command = f"ns-train {self._model} --data {self._data_path} --vis viewer"
         cprint(command, "yellow")
 
+        run_export_dir = datetime.now().strftime("%Y-%m-%d_%H%M%S") + self._export_postfix
         conf = custom_config.alex_silhouette_model.config
         data_path = Path(self._data_path)
+
         conf.method_name = self._model
-        conf.timestamp = datetime.now().strftime("%Y-%m-%d_%H%M%S") + self._export_postfix
+        conf.timestamp = run_export_dir
         conf.pipeline.datamanager.data = data_path
         conf.pipeline.model.use_optimized_sigmoid = self._use_optimized_sigmoid
         conf.pipeline.model.use_weight_prioritization = self._use_weight_prioritization
@@ -49,6 +51,8 @@ class NerfstudioTrainStarter:
         conf.pipeline.model.renderer_sig_offset = self._renderer_sig_offset
 
         main(conf)
+
+        context.current_run_export_dir = run_export_dir
 
         # Call the next module
         next_step(context)

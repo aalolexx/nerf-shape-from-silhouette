@@ -9,10 +9,9 @@ sys.path.append('davi-export-method')
 from exporter import custom_exporter
 # from exporter import custom_tsdf_utils
 
-class Exporter:
-    def __init__(self, load_config: str, output_dir: str, export_type: str = "tsdf", **kwargs) -> None:
-        self.load_config = Path(load_config)
-        self.output_dir = Path(output_dir)
+class MeshExporter:
+    def __init__(self, export_config_base_dir: str, export_type: str = "tsdf", **kwargs) -> None:
+        self.export_config_base_dir = export_config_base_dir
         self.export_type = export_type
         self.export_params = kwargs
 
@@ -27,24 +26,12 @@ class Exporter:
                  custom_exporter.ExportMarchingCubesMesh
 
         # Create the exporter object with the necessary parameters
-        exporter = config(load_config=self.load_config, output_dir=self.output_dir, **self.export_params)
+        export_config_path = Path(self.export_config_base_dir + "/" + context.current_run_export_dir + "/config.yml")
+
+        exporter = config(load_config=export_config_path, output_dir=Path(context.output_dir_path), **self.export_params)
 
         # Call the main export function
         exporter.main()
 
         # Call the next step in the pipeline
         next_step(context)
-
-# # Example usage
-# if __name__ == "__main__":
-#     # Example call to the CustomExporter class
-#     custom_exporter = CustomExporter(
-#         load_config="path/to/config.yml",
-#         output_dir="path/to/output",
-#         export_type="tsdf",  # or "poisson" or "marching-cubes"
-#         rgb_output_name="bw",
-#         # Add other parameters specific to the export type
-#     )
-
-#     # Call the exporter with a mock context and next_step
-#     custom_exporter(Context(), lambda x: print("Next step"))
