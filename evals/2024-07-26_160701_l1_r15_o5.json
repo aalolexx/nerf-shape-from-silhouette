@@ -1,0 +1,17 @@
+{
+  "experiment_name": "hook",
+  "method_name": "alex-silhouette-model",
+  "checkpoint": "outputs\\hook\\alex-silhouette-model\\2024-07-26_160701_l1_r15_o5\\nerfstudio_models\\step-000009999.ckpt",
+  "results": {
+    "psnr": 14.569445610046387,
+    "psnr_std": 2.558945655822754,
+    "ssim": 0.6626790761947632,
+    "ssim_std": 0.02023187465965748,
+    "lpips": 0.15579399466514587,
+    "lpips_std": 0.058491531759500504,
+    "num_rays_per_sec": 53565.23046875,
+    "num_rays_per_sec_std": 3490.7080078125,
+    "fps": 0.1487923115491867,
+    "fps_std": 0.009696410968899727
+  }
+}

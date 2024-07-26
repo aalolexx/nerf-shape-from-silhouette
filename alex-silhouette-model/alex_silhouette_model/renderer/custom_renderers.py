@@ -88,6 +88,9 @@ class BWRenderer(nn.Module):
         if self.use_optimized_sigmoid:
             accumulated_weight = self.improved_sigmoid(accumulated_weight)
 
+        # Final Binarization
+        #accumulated_weight[accumulated_weight >= 0.5] = 1
+        #accumulated_weight[accumulated_weight < 0.5] = 0
         return accumulated_weight  # Shape 4096, 1
 
     def get_background_color(
@@ -132,7 +135,7 @@ class BWRenderer(nn.Module):
         rgb, opacity = image[..., :1], image[..., 1:]
         background_color = self.get_background_color(self.background_color, shape=rgb.shape, device=rgb.device)
         assert isinstance(background_color, torch.Tensor)
-        return rgb * opacity + background_color.to(rgb.device) * (1 - opacity)
+        return rgb * 1 + background_color.to(rgb.device) * (1 - opacity)
 
     def blend_background_for_loss_computation(
         self,

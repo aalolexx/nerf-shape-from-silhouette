@@ -29,7 +29,7 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
     raise ValueError(error) from error
 
 def run_demo_pipeline_synthetic_data():
-    dataset_name = "trex"
+    dataset_name = "hook"
     model_name = "alex-silhouette-model"
     input_data_path = "data/working/binarized_images_lowres/" + dataset_name
     export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
@@ -42,15 +42,15 @@ def run_demo_pipeline_synthetic_data():
         # Run Segmentation Steps
         ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/test",
                                   "data/working/binarized_images_lowres/" + dataset_name + "/test",
-                                  target_width=256),
+                                  target_width=600),
         ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/train",
                                   "data/working/binarized_images_lowres/" + dataset_name + "/train",
-                                  target_width=256),
+                                  target_width=600),
         ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/val",
                                   "data/working/binarized_images_lowres/" + dataset_name + "/val",
-                                  target_width=256),
+                                  target_width=600),
 
-        # Move Camera Meta Files (DNERF specific)
+        ## Move Camera Meta Files (DNERF specific)
         FileCopier("data/input/dnerf/" + dataset_name + "/transforms_train.json",
                    "data/working/binarized_images_lowres/" + dataset_name + "/transforms_train.json"),
         FileCopier("data/input/dnerf/" + dataset_name + "/transforms_test.json",
@@ -62,12 +62,12 @@ def run_demo_pipeline_synthetic_data():
         # Actual NERF Training
         NerfstudioTrainStarter(model=model_name,
                                data_path=input_data_path,
-                               use_optimized_sigmoid=True,
+                               use_optimized_sigmoid=False,
                                use_weight_prioritization=False,
-                               renderer_sig_range=15.0,
+                               renderer_sig_range=10.0,
                                renderer_sig_offset=5.0,
                                loss_method="L1",
-                               export_postfix="_l1_r15_o5",
+                               export_postfix="_l1_pure",
                                ),
         Protocoller("trained alex-silhouette-model L1. range=15.0, offset=5.0"),
 
