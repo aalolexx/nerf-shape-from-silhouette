@@ -9,3 +9,4 @@ class PipeContext:
     working_dir_path: str
     misc_dir_path: str
     log_file_path: str
+    current_run_export_dir: str

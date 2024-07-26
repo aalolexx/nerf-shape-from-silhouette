@@ -8,7 +8,7 @@ from pipeline_steps.Protocoller import Protocoller
 from pipeline_steps.ProtocolAnalyzer import (ProtocolAnalyzer)
 from pipeline_steps.NerfstudioTrainStarter import NerfstudioTrainStarter
 
-from pipeline_steps.Exporter import Exporter
+from pipeline_steps.MeshExporter import MeshExporter
 
 import time
 
@@ -22,7 +22,8 @@ def get_new_context():
         output_dir_path="data/output",
         working_dir_path="data/working",
         misc_dir_path="data/misc",
-        log_file_path="data/output/run_" + str(time.time()) + "_log.txt"
+        log_file_path="data/output/run_" + str(time.time()) + "_log.txt",
+        current_run_export_dir=""
     )
 
 
@@ -325,31 +326,6 @@ def run_pipeline_test_sig_params():
     )
     pipeline_pie(ctx, error_handler)
 
-
-def run_pipeline_with_export():
-    input_data_path = "data/input/dnerf-hook-bin"
-    output_dir = "data/output"
-    export_dir = "data/exports"
-    ctx = get_new_context()
-    pipeline_pie = Pipeline[PipeContext](
-        # Protocoller("prepared dataset"),
-        # NerfstudioTrainStarter(model="alex-silhouette-model",
-        #                        data_path=input_data_path,
-        #                        use_optimized_sigmoid=True,
-        #                        use_weight_prioritization=True,
-        #                        loss_method="MSE",
-        #                        export_postfix="_MSE_os_wp"),
-        # Protocoller("trained alex-silhouette-model MSE oSig+wPrio"),
-        # Add the CustomExporter step
-        Exporter(
-            load_config=output_dir+"/config.yml",
-            output_dir=export_dir,
-            export_type="tsdf",  # Choose the type of export: tsdf, poisson, marching-cubes
-            rgb_output_name="bw",
-            # Add other parameters specific to the export type
-        ),
-    )
-    pipeline_pie(ctx, error_handler)
 
 if __name__ == "__main__":
     run_pipeline_test_sig_params()
