@@ -27,8 +27,9 @@ class MeshExporter:
 
         # Create the exporter object with the necessary parameters
         export_config_path = Path(self.export_config_base_dir + "/" + context.current_run_export_dir + "/config.yml")
+        output_dir = Path(context.output_dir_path + "/" + context.current_run_export_dir)
 
-        exporter = config(load_config=export_config_path, output_dir=Path(context.output_dir_path), **self.export_params)
+        exporter = config(load_config=export_config_path, output_dir=output_dir, **self.export_params)
 
         # Call the main export function
         exporter.main()

@@ -28,8 +28,8 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
     print(error)
     raise ValueError(error) from error
 
-def run_demo_pipeline_synthetic_data():
-    dataset_name = "hook"
+def run_demo_pipeline_with_dnerf_data(dataset):
+    dataset_name = dataset
     model_name = "alex-silhouette-model"
     input_data_path = "data/working/binarized_images_lowres/" + dataset_name
     export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
@@ -84,4 +84,6 @@ def run_demo_pipeline_synthetic_data():
     pipeline_pie(ctx, error_handler)
 
 if __name__ == "__main__":
-    run_demo_pipeline_synthetic_data()
+    run_demo_pipeline_with_dnerf_data("hook")
+    run_demo_pipeline_with_dnerf_data("lego")
+    run_demo_pipeline_with_dnerf_data("trex")

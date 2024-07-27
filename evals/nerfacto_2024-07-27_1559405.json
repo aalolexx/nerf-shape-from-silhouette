@@ -1,0 +1,17 @@
+{
+  "experiment_name": "hook",
+  "method_name": "nerfacto",
+  "checkpoint": "outputs\\hook\\nerfacto\\2024-07-27_155940\\nerfstudio_models\\step-000009999.ckpt",
+  "results": {
+    "psnr": 12.046504974365234,
+    "psnr_std": 1.3807066679000854,
+    "ssim": 0.8469721674919128,
+    "ssim_std": 0.05221628025174141,
+    "lpips": 0.2657003402709961,
+    "lpips_std": 0.08007633686065674,
+    "num_rays_per_sec": 68696.5546875,
+    "num_rays_per_sec_std": 13917.4921875,
+    "fps": 0.1908237636089325,
+    "fps_std": 0.038659702986478806
+  }
+}
