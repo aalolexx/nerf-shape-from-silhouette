@@ -3,6 +3,7 @@ data/input/*
 data/misc/*
 data/output/*
 data/working/*
+data/dnerf/*
 outputs/*
 custom-nerf-model/outputs/*
 custom-nerf-model/*/outputs/*
