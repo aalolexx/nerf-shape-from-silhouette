@@ -17,6 +17,7 @@ from alex_silhouette_model import custom_config
 class NerfstudioTrainStarter:
     def __init__(self, model: str,
                  data_path: str,
+                 experiment_name: str = "default_experiment",
                  use_optimized_sigmoid: bool = True,
                  use_weight_prioritization: bool = True,
                  renderer_sig_range: float = 8.4,
@@ -24,6 +25,7 @@ class NerfstudioTrainStarter:
                  loss_method: str = "MSE",
                  export_postfix: str = "") -> None:
         self._model = model
+        self._experiment_name = experiment_name
         self._data_path = data_path
         self._use_optimized_sigmoid = use_optimized_sigmoid
         self._use_weight_prioritization = use_weight_prioritization,
@@ -42,6 +44,7 @@ class NerfstudioTrainStarter:
         data_path = Path(self._data_path)
 
         conf.method_name = self._model
+        conf.experiment_name = self._experiment_name
         conf.timestamp = run_export_dir
         conf.pipeline.datamanager.data = data_path
         conf.pipeline.model.use_optimized_sigmoid = self._use_optimized_sigmoid
