@@ -33,10 +33,10 @@ from nerfstudio.utils.eval_utils import eval_setup
 from nerfstudio.utils.rich_utils import CONSOLE
 
 # custom methods
-# import custom_tsdf_utils
-# from custom_exporter_utils import generate_point_cloud
-from .custom_exporter_utils import generate_point_cloud
-from . import custom_tsdf_utils
+import custom_tsdf_utils
+from custom_exporter_utils import generate_point_cloud
+# from .custom_exporter_utils import generate_point_cloud
+# from . import custom_tsdf_utils
 
 @dataclass
 class Exporter:
@@ -163,7 +163,7 @@ class ExportPoissonMesh(Exporter):
     """Number of points to generate. May result in less if outlier removal is used."""
     remove_outliers: bool = False # True
     """Remove outliers from the point cloud."""
-    remove_vertices_threshold: float = 0 #.1
+    remove_vertices_threshold: float = 0.01 #.1
     """Threshold determining the minimum density the vertices should have"""
     reorient_normals: bool = True
     """Reorient point cloud normals based on view direction."""

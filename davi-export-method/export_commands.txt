@@ -7,4 +7,12 @@ python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\ex
 
 python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py poisson --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\dnerf-hook-bin\alex-silhouette-model\2024-07-25_001016\config.yml --rgb_output_name bw --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\poisson\n-alex
 
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py poisson --load-config L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\lego\alex-silhouette-model\2024-07-27_222846_l1_oSig_lego\config.yml --rgb_output_name bw --output-dir "L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\lego\alex-silhouette-model\2024-07-27_222846_l1_oSig_lego\exports"
+
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py poisson --load-config L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\hook\alex-silhouette-model\2024-07-27_221252_l1_oSig_hook\config.yml --rgb_output_name bw --output-dir "L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\hook\alex-silhouette-model\2024-07-27_221252_l1_oSig_hook\exports"
+
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py poisson --load-config L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\trex\alex-silhouette-model\2024-07-27_224345_l1_oSig_trex\config.yml --rgb_output_name bw --output-dir "L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\trex\alex-silhouette-model\2024-07-27_224345_l1_oSig_trex\exports"
+
+python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py tsdf --load-config L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\trex\alex-silhouette-model\2024-07-27_224345_l1_oSig_trex\config.yml --rgb_output_name bw --output-dir "L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\outputs\trex\alex-silhouette-model\2024-07-27_224345_l1_oSig_trex\exports"
+
 python L:\Master\TU\3_HTCV_Proj\nerf-shape-from-silhouette\davi-export-method\exporter\custom_exporter.py tsdf --load-config L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\outputs\unnamed\davi-silhouette-method\2024-06-24_203528\config.yml --rgb_output_name accumulation --output-dir L:\Master\TU\3_HTCV_Proj\dnerf-hook-bin\exports\tsdf\n-davi

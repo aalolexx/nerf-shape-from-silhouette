@@ -4,6 +4,7 @@ data/misc/*
 data/output/*
 data/working/*
 data/dnerf/*
+export_mesh_renders/*
 outputs/*
 custom-nerf-model/outputs/*
 custom-nerf-model/*/outputs/*
