@@ -33,10 +33,10 @@ from nerfstudio.utils.eval_utils import eval_setup
 from nerfstudio.utils.rich_utils import CONSOLE
 
 # custom methods
-from . import custom_tsdf_utils
 # import custom_tsdf_utils
 # from custom_exporter_utils import generate_point_cloud
 from .custom_exporter_utils import generate_point_cloud
+from . import custom_tsdf_utils
 
 @dataclass
 class Exporter:
@@ -161,8 +161,10 @@ class ExportPoissonMesh(Exporter):
 
     num_points: int = 10000 # 1000000
     """Number of points to generate. May result in less if outlier removal is used."""
-    remove_outliers: bool = True
+    remove_outliers: bool = False # True
     """Remove outliers from the point cloud."""
+    remove_vertices_threshold: float = 0 #.1
+    """Threshold determining the minimum density the vertices should have"""
     reorient_normals: bool = True
     """Reorient point cloud normals based on view direction."""
     depth_output_name: str = "depth"
@@ -173,13 +175,14 @@ class ExportPoissonMesh(Exporter):
     """Method to estimate normals with."""
     normal_output_name: str = "normals"
     """Name of the normal output."""
-    save_point_cloud: bool = True
+    save_point_cloud: bool = False
     """Whether to save the point cloud."""
     use_bounding_box: bool = True
     """Only query points within the bounding box"""
-    bounding_box_min: Tuple[float, float, float] = (-1, -1, -1)
+    bbox_uniform_size = 1.2
+    bounding_box_min: Tuple[float, float, float] = (-bbox_uniform_size, -bbox_uniform_size, -bbox_uniform_size)
     """Minimum of the bounding box, used if use_bounding_box is True."""
-    bounding_box_max: Tuple[float, float, float] = (1, 1, 1)
+    bounding_box_max: Tuple[float, float, float] = (bbox_uniform_size, bbox_uniform_size, bbox_uniform_size)
     """Minimum of the bounding box, used if use_bounding_box is True."""
     obb_center: Optional[Tuple[float, float, float]] = None
     """Center of the oriented bounding box."""
@@ -250,7 +253,7 @@ class ExportPoissonMesh(Exporter):
 
         CONSOLE.print("Computing Mesh... this may take a while.")
         mesh, densities = o3d.geometry.TriangleMesh.create_from_point_cloud_poisson(pcd, depth=9)
-        vertices_to_remove = densities < np.quantile(densities, 0.1)
+        vertices_to_remove = densities < np.quantile(densities, self.remove_vertices_threshold)
         mesh.remove_vertices_by_mask(vertices_to_remove)
         print("\033[A\033[A")
         CONSOLE.print("[bold green]:white_check_mark: Computing Mesh")
@@ -343,12 +346,98 @@ class ExportMarchingCubesMesh(Exporter):
         #     num_pixels_per_side=self.num_pixels_per_side,
         # )
 
+@dataclass
+class ExportPointCloud(Exporter):
+    """
+    Export a mesh using poisson surface reconstruction.
+    """
+
+    num_points: int = 10000 # 1000000
+    """Number of points to generate. May result in less if outlier removal is used."""
+    remove_outliers: bool = True
+    """Remove outliers from the point cloud."""
+    reorient_normals: bool = True
+    """Reorient point cloud normals based on view direction."""
+    depth_output_name: str = "depth"
+    """Name of the depth output."""
+    rgb_output_name: str = "bw" # "rgb"
+    """Name of the RGB output."""
+    normal_method: Literal["open3d", "model_output"] = "model_output"
+    """Method to estimate normals with."""
+    normal_output_name: str = "normals"
+    """Name of the normal output."""
+    use_bounding_box: bool = True
+    """Only query points within the bounding box"""
+    bbox_uniform_size = 1.2
+    bounding_box_min: Tuple[float, float, float] = (-bbox_uniform_size, -bbox_uniform_size, -bbox_uniform_size)
+    """Minimum of the bounding box, used if use_bounding_box is True."""
+    bounding_box_max: Tuple[float, float, float] = (bbox_uniform_size, bbox_uniform_size, bbox_uniform_size)
+    """Minimum of the bounding box, used if use_bounding_box is True."""
+    obb_center: Optional[Tuple[float, float, float]] = None
+    """Center of the oriented bounding box."""
+    obb_rotation: Optional[Tuple[float, float, float]] = None
+    """Rotation of the oriented bounding box. Expressed as RPY Euler angles in radians"""
+    obb_scale: Optional[Tuple[float, float, float]] = None
+    """Scale of the oriented bounding box along each axis."""
+    num_rays_per_batch: int = 8192*2 # 32768
+    """Number of rays to evaluate per batch. Decrease if you run out of memory."""
+    std_ratio: float = 10.0
+    """Threshold based on STD of the average distances across the point cloud to remove outliers."""
+    use_spherical_sampling: bool = False
+
+    def main(self) -> None:
+        """Export mesh"""
+
+        if not self.output_dir.exists():
+            self.output_dir.mkdir(parents=True)
+
+        _, pipeline, _, _ = eval_setup(self.load_config)
+
+        validate_pipeline(self.normal_method, self.normal_output_name, pipeline)
+
+        # Increase the batchsize to speed up the evaluation.
+        assert isinstance(pipeline.datamanager, (VanillaDataManager, ParallelDataManager))
+        assert pipeline.datamanager.train_pixel_sampler is not None
+        pipeline.datamanager.train_pixel_sampler.num_rays_per_batch = self.num_rays_per_batch
+
+        # Whether the normals should be estimated based on the point cloud.
+        estimate_normals = self.normal_method == "open3d"
+        if self.obb_center is not None and self.obb_rotation is not None and self.obb_scale is not None:
+            crop_obb = OrientedBox.from_params(self.obb_center, self.obb_rotation, self.obb_scale)
+        else:
+            crop_obb = None
+
+        pcd = generate_point_cloud(
+            pipeline=pipeline,
+            num_points=self.num_points,
+            remove_outliers=self.remove_outliers,
+            reorient_normals=self.reorient_normals,
+            estimate_normals=estimate_normals,
+            rgb_output_name=self.rgb_output_name,
+            depth_output_name=self.depth_output_name,
+            normal_output_name=self.normal_output_name if self.normal_method == "model_output" else None,
+            use_bounding_box=self.use_bounding_box,
+            bounding_box_min=self.bounding_box_min,
+            bounding_box_max=self.bounding_box_max,
+            crop_obb=crop_obb,
+            std_ratio=self.std_ratio,
+            use_spherical_sampling=self.use_spherical_sampling,
+        )
+        torch.cuda.empty_cache()
+        CONSOLE.print(f"[bold green]:white_check_mark: Generated {pcd}")
+
+        CONSOLE.print("Saving Point Cloud...")
+        o3d.io.write_point_cloud(str(self.output_dir / "point_cloud.ply"), pcd)
+        print("\033[A\033[A")
+        CONSOLE.print("[bold green]:white_check_mark: Saving Point Cloud")
+
 
 Commands = tyro.conf.FlagConversionOff[
     Union[
         Annotated[ExportTSDFMesh, tyro.conf.subcommand(name="tsdf")],
         Annotated[ExportMarchingCubesMesh, tyro.conf.subcommand(name="marching-cubes")],
         Annotated[ExportPoissonMesh, tyro.conf.subcommand(name="poisson")],
+        Annotated[ExportPointCloud, tyro.conf.subcommand(name="pointcloud")],
     ]
 ]
 

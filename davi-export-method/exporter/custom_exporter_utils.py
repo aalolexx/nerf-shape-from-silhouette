@@ -94,6 +94,7 @@ def generate_point_cloud(
     bounding_box_max: Optional[Tuple[float, float, float]] = None,
     crop_obb: Optional[OrientedBox] = None,
     std_ratio: float = 10.0,
+    use_spherical_sampling: bool = False,
 ) -> o3d.geometry.PointCloud:
     """Generate a point cloud from a nerf.
 
@@ -123,9 +124,45 @@ def generate_point_cloud(
         console=CONSOLE,
     )
     points = []
-    rgbs = []
+    # rgbs = []
     normals = []
     view_directions = []
+
+    if use_spherical_sampling:
+        # Parameters
+        num_samples = 16384  # Number of rays (same as original)
+        scene_center = np.array([0.0, 0.0, 0])  # Center of the scene
+        sphere_radius = 4.0  # Radius of the sphere (based on original max range)
+
+        # Sample points uniformly on a sphere using spherical coordinates
+        phi = np.random.uniform(0, np.pi * 2, pipeline.datamanager.train_pixel_sampler.num_rays_per_batch)
+        cos_theta = np.random.uniform(-1, 1, pipeline.datamanager.train_pixel_sampler.num_rays_per_batch)
+        theta = np.arccos(cos_theta)
+
+        # Convert spherical coordinates to Cartesian coordinates for ray origins
+        x = sphere_radius * np.sin(theta) * np.cos(phi)
+        y = sphere_radius * np.sin(theta) * np.sin(phi)
+        z = sphere_radius * np.cos(theta)
+        origins_np = np.vstack((x, y, z)).T
+
+        # Directions are vectors pointing from the origins to the scene center
+        directions_np = scene_center - origins_np
+        directions_np /= np.linalg.norm(directions_np, axis=1, keepdims=True)  # Normalize directions
+
+        # For visualization or further processing, the origins and directions are now ready
+        # print("Sample Ray Origins (first 5):", origins_np[:5])
+        # print("Sample Ray Directions (first 5):", directions_np[:5])
+
+        # Assuming origins and directions have been generated as numpy arrays
+        # Convert them to torch tensors and move to the appropriate device
+
+        origins = torch.tensor(origins_np, device='cuda:0').float()
+        directions = torch.tensor(directions_np, device='cuda:0').float()
+
+        # Ensure the tensors are contiguous
+        origins = origins.contiguous()
+        directions = directions.contiguous()
+
     if use_bounding_box and (crop_obb is not None and bounding_box_max is not None):
         CONSOLE.print("Provided aabb and crop_obb at the same time, using only the obb", style="bold yellow")
     with progress as progress_bar:
@@ -134,9 +171,21 @@ def generate_point_cloud(
             normal = None
 
             with torch.no_grad():
+                # Retrieve ray bundle from datamanager
                 ray_bundle, _ = pipeline.datamanager.next_train(0)
                 assert isinstance(ray_bundle, RayBundle)
+
+                if use_spherical_sampling:
+                    print("Using spherical sampling!")
+                    # Inject custom origins and directions
+                    ray_bundle.origins = origins
+                    ray_bundle.directions = directions
+
+                # Pass the modified ray bundle to the model
                 outputs = pipeline.model(ray_bundle)
+                
+
+            # Rest of your code remains the same
             if rgb_output_name not in outputs:
                 CONSOLE.rule("Error", style="red")
                 CONSOLE.print(f"Could not find {rgb_output_name} in the model outputs", justify="center")
@@ -163,11 +212,46 @@ def generate_point_cloud(
             point = ray_bundle.origins + ray_bundle.directions * depth
             view_direction = ray_bundle.directions
 
+            
+
+            ## print shape of origins and directions
+            # Ensure that ray_bundle is of the correct type
+            # assert isinstance(ray_bundle, RayBundle), "The returned object is not a RayBundle"
+
+            # # Access and print the origins and directions
+            # origins = ray_bundle.origins
+            # directions = ray_bundle.directions
+
+            # # Check if the origins and directions are in the correct format (e.g., torch tensors)
+            # print("Ray Origins:", origins)
+            # print("Ray Directions:", directions)
+
+            # # For more detailed inspection, convert to numpy if they are tensors and print some statistics
+            # if isinstance(origins, torch.Tensor) and isinstance(directions, torch.Tensor):
+            #     origins = origins.cpu().numpy()
+            #     directions = directions.cpu().numpy()
+
+            #     # Print the first few entries as a sample
+            #     print("Sample Ray Origins (first 5):", origins[:5])
+            #     print("Sample Ray Directions (first 5):", directions[:5])
+
+            #     # Print statistics for further analysis
+            #     print("Origins shape:", origins.shape)
+            #     print("Directions shape:", directions.shape)
+            #     print("Origins mean:", origins.mean(axis=0))
+            #     print("Directions mean:", directions.mean(axis=0))
+            #     print("Origins min:", origins.min(axis=0))
+            #     print("Origins max:", origins.max(axis=0))
+            #     print("Directions min:", directions.min(axis=0))
+            #     print("Directions max:", directions.max(axis=0))
+            # else:
+            #     print("Ray origins and directions are not in a recognized tensor format.")
+
             # Filter points with opacity lower than 0.5
             mask = rgba[..., -1] > 0.5
             point = point[mask]
             view_direction = view_direction[mask]
-            rgb = rgba[mask][..., :3]
+            # rgb = rgba[mask][..., :3]
             if normal is not None:
                 normal = normal[mask]
 
@@ -182,19 +266,19 @@ def generate_point_cloud(
                 else:
                     mask = crop_obb.within(point)
                 point = point[mask]
-                rgb = rgb[mask]
+                # rgb = rgb[mask]
                 view_direction = view_direction[mask]
                 if normal is not None:
                     normal = normal[mask]
 
             points.append(point)
-            rgbs.append(rgb)
+            # rgbs.append(rgb)
             view_directions.append(view_direction)
             if normal is not None:
                 normals.append(normal)
             progress.advance(task, point.shape[0])
     points = torch.cat(points, dim=0)
-    rgbs = torch.cat(rgbs, dim=0)
+    # rgbs = torch.cat(rgbs, dim=0)
     view_directions = torch.cat(view_directions, dim=0).cpu()
 
     import open3d as o3d
