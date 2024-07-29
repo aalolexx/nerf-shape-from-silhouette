@@ -212,16 +212,16 @@ class CustomModel(NerfactoModel):
             )
             assert metrics_dict is not None and "distortion" in metrics_dict
             loss_dict["distortion_loss"] = self.config.distortion_loss_mult * metrics_dict["distortion"]
-            if self.config.predict_normals:
-                # orientation loss for computed normals
-                loss_dict["orientation_loss"] = self.config.orientation_loss_mult * torch.mean(
-                    outputs["rendered_orientation_loss"]
-                )
+            #if self.config.predict_normals:
+            #    # orientation loss for computed normals
+            #    loss_dict["orientation_loss"] = self.config.orientation_loss_mult * torch.mean(
+            #        outputs["rendered_orientation_loss"]
+            #    )
 
-                # ground truth supervision for normals
-                loss_dict["pred_normal_loss"] = self.config.pred_normal_loss_mult * torch.mean(
-                    outputs["rendered_pred_normal_loss"]
-                )
+            #    # ground truth supervision for normals
+            #    loss_dict["pred_normal_loss"] = self.config.pred_normal_loss_mult * torch.mean(
+            #        outputs["rendered_pred_normal_loss"]
+            #    )
             # Add loss from camera optimizer
             self.camera_optimizer.get_loss_dict(loss_dict)
         return loss_dict
@@ -244,6 +244,7 @@ class CustomModel(NerfactoModel):
         self.camera_optimizer.get_metrics_dict(metrics_dict)
         return metrics_dict
 
+    # Method that is used for e.g. Tensorboard Training vis
     def get_image_metrics_and_images(
         self, outputs: Dict[str, torch.Tensor], batch: Dict[str, torch.Tensor]
     ) -> Tuple[Dict[str, float], Dict[str, torch.Tensor]]:
@@ -251,9 +252,8 @@ class CustomModel(NerfactoModel):
 
         # CHANGE
         predicted_bw = outputs["bw"].expand(-1, -1, 3) # unsqueeze to RGB again for image evaluation
-
         gt_rgb = batch["image"].to(self.device)  # RGB or RGBA image
-        #gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
+        gt_rgb = self.renderer_rgb.blend_background(gt_rgb)
 
         acc = colormaps.apply_colormap(outputs["accumulation"])
         depth = colormaps.apply_depth_colormap(
@@ -265,19 +265,10 @@ class CustomModel(NerfactoModel):
         combined_acc = torch.cat([acc], dim=1)
         combined_depth = torch.cat([depth], dim=1)
 
-        # Switch images from [H, W, C] to [1, C, H, W] for metrics computations
-        # CHANGE
-        gt_rgb = torch.moveaxis(gt_rgb, -1, 0)[None, ...]
-        predicted_bw = torch.moveaxis(predicted_bw, -1, 0)[None, ...]
-
-        # CHANGE
-        psnr = self.psnr(gt_rgb, predicted_bw) #predicted_rgb)
-        ssim = self.ssim(gt_rgb, predicted_bw) #predicted_rgb)
-        lpips = self.lpips(gt_rgb, predicted_bw) #predicted_rgb)
-
-        # all of these metrics will be logged as scalars
-        metrics_dict = {"psnr": float(psnr.item()), "ssim": float(ssim)}  # type: ignore
-        metrics_dict["lpips"] = float(lpips)
+        #print('combined bw: ')
+        #print(combined_bw.shape)
+        #print('predicted bw: ')
+        #print(predicted_bw.shape)
 
         # CHANGE
         images_dict = {
@@ -286,6 +277,18 @@ class CustomModel(NerfactoModel):
             "accumulation": combined_acc,
             "depth": combined_depth
         }
+
+        # Switch images from [H, W, C] to [1, C, H, W] for metrics computations
+        gt_rgb = torch.moveaxis(gt_rgb, -1, 0)[None, ...]
+        predicted_bw = torch.moveaxis(predicted_bw, -1, 0)[None, ...]
+
+        psnr = self.psnr(gt_rgb, predicted_bw) #predicted_rgb)
+        ssim = self.ssim(gt_rgb, predicted_bw) #predicted_rgb)
+        lpips = self.lpips(gt_rgb, predicted_bw) #predicted_rgb)
+
+        # all of these metrics will be logged as scalars
+        metrics_dict = {"psnr": float(psnr.item()), "ssim": float(ssim)}  # type: ignore
+        metrics_dict["lpips"] = float(lpips)
 
         for i in range(self.config.num_proposal_iterations):
             key = f"prop_depth_{i}"

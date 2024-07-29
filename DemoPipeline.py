@@ -28,6 +28,54 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
     print(error)
     raise ValueError(error) from error
 
+# REQ
+def run_pipeline_big_training():
+    dataset_name = "hook"
+    model_name = "alex-silhouette-model"
+    input_data_path = "data/working/binarized_images_lowres/" + dataset_name
+    export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
+
+    ctx = get_new_context()
+
+    pipeline_pie = Pipeline[PipeContext](
+        Protocoller("started pipeline"),
+        # Actual NERF Training
+        NerfstudioTrainStarter(model=model_name,
+                               experiment_name="hook-big-training",
+                               data_path=input_data_path,
+                               steps_per_eval_batch=100,
+                               steps_per_save=2000,
+                               max_num_iterations=10000,
+                               use_optimized_sigmoid=True,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=10.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               vis="tensorboard",
+                               export_postfix="_l1_oSig_no-normals_" + dataset_name,
+                               ),
+        Protocoller("trained BIG alex-silhouette-model L1. range=15.0, offset=5.0"),
+
+        NerfstudioTrainStarter(model=model_name,
+                               experiment_name="hook-big-training",
+                               data_path=input_data_path,
+                               steps_per_eval_batch=100,
+                               steps_per_save=2000,
+                               max_num_iterations=10000,
+                               use_optimized_sigmoid=False,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=10.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               vis="tensorboard",
+                               export_postfix="_l1_pure_no-normals" + dataset_name,
+                               ),
+        Protocoller("trained BIG alex-silhouette-model L1 Pure"),
+
+        ProtocolAnalyzer(),
+    )
+    pipeline_pie(ctx, error_handler)
+
 def run_demo_pipeline_with_dnerf_data(dataset):
     dataset_name = dataset
     model_name = "alex-silhouette-model"
@@ -37,27 +85,27 @@ def run_demo_pipeline_with_dnerf_data(dataset):
     ctx = get_new_context()
 
     pipeline_pie = Pipeline[PipeContext](
-        #Protocoller("started pipeline"),
-#
-        ## Run Segmentation Steps
-        #ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/test",
-        #                          "data/working/binarized_images_lowres/" + dataset_name + "/test",
-        #                          target_width=600),
-        #ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/train",
-        #                          "data/working/binarized_images_lowres/" + dataset_name + "/train",
-        #                          target_width=600),
-        #ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/val",
-        #                          "data/working/binarized_images_lowres/" + dataset_name + "/val",
-        #                          target_width=600),
-#
-        ### Move Camera Meta Files (DNERF specific)
-        #FileCopier("data/input/dnerf/" + dataset_name + "/transforms_train.json",
-        #           "data/working/binarized_images_lowres/" + dataset_name + "/transforms_train.json"),
-        #FileCopier("data/input/dnerf/" + dataset_name + "/transforms_test.json",
-        #           "data/working/binarized_images_lowres/" + dataset_name + "/transforms_test.json"),
-        #FileCopier("data/input/dnerf/" + dataset_name + "/transforms_val.json",
-        #           "data/working/binarized_images_lowres/" + dataset_name + "/transforms_val.json"),
-        #Protocoller("prepared dataset"),
+        Protocoller("started pipeline"),
+
+        # Run Segmentation Steps
+        ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/test",
+                                  "data/working/binarized_images_lowres/" + dataset_name + "/test",
+                                  target_width=600),
+        ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/train",
+                                  "data/working/binarized_images_lowres/" + dataset_name + "/train",
+                                  target_width=600),
+        ImageBinarizerRMBGNoDepth("data/input/dnerf/" + dataset_name + "/val",
+                                  "data/working/binarized_images_lowres/" + dataset_name + "/val",
+                                  target_width=600),
+
+        ## Move Camera Meta Files (DNERF specific)
+        FileCopier("data/input/dnerf/" + dataset_name + "/transforms_train.json",
+                   "data/working/binarized_images_lowres/" + dataset_name + "/transforms_train.json"),
+        FileCopier("data/input/dnerf/" + dataset_name + "/transforms_test.json",
+                   "data/working/binarized_images_lowres/" + dataset_name + "/transforms_test.json"),
+        FileCopier("data/input/dnerf/" + dataset_name + "/transforms_val.json",
+                   "data/working/binarized_images_lowres/" + dataset_name + "/transforms_val.json"),
+        Protocoller("prepared dataset"),
 
         # Actual NERF Training
         NerfstudioTrainStarter(model=model_name,
@@ -84,7 +132,65 @@ def run_demo_pipeline_with_dnerf_data(dataset):
     )
     pipeline_pie(ctx, error_handler)
 
+
+def run_demo_pipeline_with_camera_data():
+    dataset_name = "lamp"
+    model_name = "alex-silhouette-model"
+    input_data_path = "data/working/binarized_images/" + dataset_name
+    export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
+
+    ctx = get_new_context()
+
+    pipeline_pie = Pipeline[PipeContext](
+        Protocoller("started pipeline"),
+
+        # Run Segmentation Steps
+        ImageBinarizerRMBGNoDepth("data/input/" + dataset_name + "/images",
+                                  "data/working/binarized_images_origres/" + dataset_name + "/images"),
+        ImageBinarizerRMBGNoDepth("data/input/" + dataset_name + "/images_2",
+                                  "data/working/binarized_images_origres/" + dataset_name + "/images_2"),
+        ImageBinarizerRMBGNoDepth("data/input/" + dataset_name + "/images_4",
+                                  "data/working/binarized_images_origres/" + dataset_name + "/images_4"),
+        ImageBinarizerRMBGNoDepth("data/input/" + dataset_name + "/images_8",
+                                  "data/working/binarized_images_origres/" + dataset_name + "/images_8"),
+
+        ## Move Camera Meta Files (DNERF specific)
+        FileCopier("data/input/" + dataset_name + "/colmap",
+                   "data/working/binarized_images_origres/" + dataset_name + "/colmap"),
+        FileCopier("data/input/" + dataset_name + "/sparse_pc.ply",
+                   "data/working/binarized_images_origres/" + dataset_name + "/sparse_pc.ply"),
+        FileCopier("data/input/" + dataset_name + "/transforms.json",
+                   "data/working/binarized_images_origres/" + dataset_name + "/transforms.json"),
+        Protocoller("prepared dataset"),
+
+        # Actual NERF Training
+        #NerfstudioTrainStarter(model=model_name,
+        #                       experiment_name=dataset_name,
+        #                       data_path=input_data_path,
+        #                       use_optimized_sigmoid=True,
+        #                       use_weight_prioritization=False,
+        #                       renderer_sig_range=10.0,
+        #                       renderer_sig_offset=5.0,
+        #                       loss_method="L1",
+        #                       export_postfix="_l1_oSig_" + dataset_name,
+        #                       ),
+        #Protocoller("trained alex-silhouette-model L1. range=15.0, offset=5.0"),
+
+        # Export the run
+
+        #MeshExporter(
+        #    export_config_base_dir=export_config_base_dir,
+        #    export_type="tsdf",  # Choose the type of export: tsdf, poisson, marching-cubes
+        #    rgb_output_name="bw",
+        #    # Add other parameters specific to the export type
+        #),
+        #ProtocolAnalyzer(),
+    )
+    pipeline_pie(ctx, error_handler)
+
+
 if __name__ == "__main__":
-    run_demo_pipeline_with_dnerf_data("hook")
-    run_demo_pipeline_with_dnerf_data("lego")
-    run_demo_pipeline_with_dnerf_data("trex")
+    #run_demo_pipeline_with_dnerf_data("hook")
+    #run_demo_pipeline_with_dnerf_data("lego")
+    #run_demo_pipeline_with_dnerf_data("trex")
+    run_demo_pipeline_with_camera_data()

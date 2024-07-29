@@ -23,7 +23,11 @@ class NerfstudioTrainStarter:
                  renderer_sig_range: float = 8.4,
                  renderer_sig_offset: float = 0.0,
                  loss_method: str = "MSE",
-                 export_postfix: str = "") -> None:
+                 export_postfix: str = "",
+                 max_num_iterations: int = 10000,
+                 steps_per_save: int = 500,
+                 steps_per_eval_batch: int = 100,
+                 vis: str = "viewer") -> None:
         self._model = model
         self._experiment_name = experiment_name
         self._data_path = data_path
@@ -32,11 +36,15 @@ class NerfstudioTrainStarter:
         self._renderer_sig_range = renderer_sig_range
         self._renderer_sig_offset = renderer_sig_offset
         self._loss_method = loss_method
+        self._max_num_iterations = max_num_iterations
+        self._steps_per_save = steps_per_save
+        self._steps_per_eval_batch = steps_per_eval_batch
         self._export_postfix = export_postfix
+        self._vis = vis
 
     def __call__(self, context: Context, next_step: NextStep) -> None:
 
-        command = f"ns-train {self._model} --data {self._data_path} --vis viewer"
+        command = f"ns-train {self._model} --data {self._data_path} --vis " + self._vis
         cprint(command, "yellow")
 
         run_export_dir = datetime.now().strftime("%Y-%m-%d_%H%M%S") + self._export_postfix
@@ -46,6 +54,10 @@ class NerfstudioTrainStarter:
         conf.method_name = self._model
         conf.experiment_name = self._experiment_name
         conf.timestamp = run_export_dir
+        conf.steps_per_eval_batch = self._steps_per_eval_batch
+        conf.steps_per_save = self._steps_per_save
+        conf.max_num_iterations = self._max_num_iterations
+        conf.vis = self._vis
         conf.pipeline.datamanager.data = data_path
         conf.pipeline.model.use_optimized_sigmoid = self._use_optimized_sigmoid
         conf.pipeline.model.use_weight_prioritization = self._use_weight_prioritization

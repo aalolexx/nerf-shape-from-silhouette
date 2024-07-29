@@ -1,0 +1,17 @@
+{
+  "experiment_name": "hook-big-training",
+  "method_name": "alex-silhouette-model",
+  "checkpoint": "outputs\\hook-big-training\\alex-silhouette-model\\2024-07-28_174845_l1_pure_hook\\nerfstudio_models\\step-000029999.ckpt",
+  "results": {
+    "psnr": 14.292681694030762,
+    "psnr_std": 2.515962839126587,
+    "ssim": 0.8702834844589233,
+    "ssim_std": 0.04809495806694031,
+    "lpips": 0.22869211435317993,
+    "lpips_std": 0.06593620777130127,
+    "num_rays_per_sec": 30409.572265625,
+    "num_rays_per_sec_std": 612.6401977539062,
+    "fps": 0.08447103202342987,
+    "fps_std": 0.0017017784994095564
+  }
+}
