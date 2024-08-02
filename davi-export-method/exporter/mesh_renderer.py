@@ -5,6 +5,7 @@ import os
 from PIL import Image
 from skimage.metrics import structural_similarity as ssim
 import csv
+import math
 
 # which data split we're using ('train', 'test', 'val')
 data_split = 'val'
@@ -69,6 +70,7 @@ standard_resolution = (600, 600)
 iou_bin = []
 dice_bin = []
 ssim_bin = []
+psnr_bin = []
 
 for idx, frame in enumerate(frames_short):
     transform_matrix = np.array(frame["transform_matrix"])
@@ -176,16 +178,29 @@ for idx, frame in enumerate(frames_short):
     # print(np.array(best_crop_image)[0][0])
     # print(corresponding_np[0][0])
     sum_of_areas = best_binary_cropped_np.sum() + corresponding_np.sum()
-    print(sum_of_areas)
+    # print(sum_of_areas)
 
     # Calculate Dice Coefficient
     dice_index = 2 * intersection / sum_of_areas if sum_of_areas != 0 else 0
     print(f"Dice Index for frame {idx}: {dice_index:.4f}")
 
+    # Calculate Mean Squared Error (MSE)
+    mse = np.mean((best_crop_np - corresponding_np_resized) ** 2)
+    print(f"MSE for frame {idx}: {mse:.4f}")
+
+    # Calculate PSNR
+    if mse == 0:
+        psnr = float('inf')
+    else:
+        max_pixel = 255.0
+        psnr = 10 * math.log10(max_pixel ** 2 / mse)
+    print(f"PSNR for frame {idx}: {psnr:.4f}")
+
     best_crop_rate_bin.append(best_crop_rate)
     iou_bin.append(best_iou)
     dice_bin.append(dice_index)
     ssim_bin.append(ssim_index)
+    psnr_bin.append(psnr)
 
 
     # Save the best cropped image
@@ -227,6 +242,10 @@ print("ssims:")
 # print(ssim_bin)
 print("average SSIM:")
 print(np.mean(ssim_bin))
+print("psnrs:")
+print(psnr_bin)
+print("average PSNR:")
+print(np.mean(psnr_bin))
 
 # Define the output file path
 output_scores_file = os.path.join(output_folder, "scores.csv")
