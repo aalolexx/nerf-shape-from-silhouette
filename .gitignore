@@ -14,3 +14,4 @@ custom-nerf-model/*/outputs/*
 renders/
 /pipeline_steps/__pycache__
 /pipeline_steps/__pycache__/*
+.ipynb_checkpoints*
