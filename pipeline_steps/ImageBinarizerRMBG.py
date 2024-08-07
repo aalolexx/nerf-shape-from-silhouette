@@ -15,28 +15,37 @@ class ImageBinarizerRMBG:
     def __init__(self, images_raw_path: str,
                  images_depth_path: str,
                  images_segmented_path: str,
-                 closing_kernel_size: int = 5) -> None:
+                 closing_kernel_size: int = 5,
+                 target_width: int = -1,
+                 limit: int = -1) -> None:
         self._images_raw_path = images_raw_path
         self._images_depth_path = images_depth_path
         self._images_segmented_path = images_segmented_path
         self._closing_kernel_size = closing_kernel_size
+        self._target_width = target_width
+        self._limit = limit
 
     def __call__(self, context: Context, next_step: NextStep) -> None:
-
-
         closing_kernel = np.ones((self._closing_kernel_size, self._closing_kernel_size), np.uint8)
 
         os.makedirs(self._images_segmented_path, exist_ok=True)
 
+        i = 0
+
         # Loop trough all images
         for filename in os.listdir(self._images_raw_path):
+            if self._limit > 0:
+                i = i + 1
+                if i > self._limit:
+                    break
+
             if is_image(filename):
                 input_image_path = os.path.join(self._images_raw_path, filename)
                 depth_image_path = os.path.join(self._images_depth_path,  filename)
                 output_image_path = os.path.join(self._images_segmented_path, filename)
 
-                input_image = load_and_resize_image(input_image_path, 720)
-                depth_image = load_and_resize_image(depth_image_path, 720).convert("L")  # make sure mask is grayscale
+                input_image = load_and_resize_image(input_image_path, self._target_width)
+                depth_image = load_and_resize_image(depth_image_path, self._target_width).convert("L")  # make sure mask is grayscale
                 #depth_image.show()
 
                 bg_enhancer = ImageEnhance.Brightness(input_image)

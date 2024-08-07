@@ -14,17 +14,27 @@ import matplotlib.pyplot as plt
 class ImageBinarizerRMBGNoDepth:
     def __init__(self, images_raw_path: str,
                  images_segmented_path: str,
-                 target_width: int = -1) -> None:
+                 target_width: int = -1,
+                 limit: int = -1) -> None:
         self._images_raw_path = images_raw_path
         self._images_segmented_path = images_segmented_path
         self._target_width = target_width
+        self._limit = limit
 
     def __call__(self, context: Context, next_step: NextStep) -> None:
 
         os.makedirs(self._images_segmented_path, exist_ok=True)
 
-        # Loop trough all images
+        i = 0
+
+        # Loop through all images
         for filename in os.listdir(self._images_raw_path):
+
+            if self._limit > 0:
+                i = i + 1
+                if i > self._limit:
+                    break
+
             if is_image(filename):
                 input_image_path = os.path.join(self._images_raw_path, filename)
                 output_image_path = os.path.join(self._images_segmented_path, filename)
