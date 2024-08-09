@@ -127,6 +127,7 @@ def run_demo_pipeline_with_camera_data():
         NerfstudioTrainStarter(model=model_name,
                                experiment_name=dataset_name,
                                data_path=input_data_path,
+                               dataparser="nerfacto",
                                use_optimized_sigmoid=True,
                                use_weight_prioritization=False,
                                renderer_sig_range=10.0,

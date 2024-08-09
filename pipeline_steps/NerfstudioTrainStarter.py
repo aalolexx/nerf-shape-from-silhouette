@@ -1,3 +1,5 @@
+import nerfstudio.data.dataparsers.nerfstudio_dataparser
+
 from pipeline_util.pipeline import Context
 from pipeline_util.pipeline import *
 from pipeline_util.utils import *
@@ -27,7 +29,8 @@ class NerfstudioTrainStarter:
                  max_num_iterations: int = 10000,
                  steps_per_save: int = 500,
                  steps_per_eval_batch: int = 100,
-                 vis: str = "viewer") -> None:
+                 vis: str = "viewer",
+                 dataparser: str = "dnerf") -> None:
         self._model = model
         self._experiment_name = experiment_name
         self._data_path = data_path
@@ -41,6 +44,7 @@ class NerfstudioTrainStarter:
         self._steps_per_eval_batch = steps_per_eval_batch
         self._export_postfix = export_postfix
         self._vis = vis
+        self._dataparser = dataparser
 
     def __call__(self, context: Context, next_step: NextStep) -> None:
 
@@ -64,6 +68,12 @@ class NerfstudioTrainStarter:
         conf.pipeline.model.loss_method = self._loss_method
         conf.pipeline.model.renderer_sig_range = self._renderer_sig_range
         conf.pipeline.model.renderer_sig_offset = self._renderer_sig_offset
+
+        # Default is DNERF and it's already set up in the default config of the method
+        # only one besides DNERF supported by our pipeline right now is nerfacto
+        # -> use this one for real world datasets processed with colmap (ns-process)
+        if self._dataparser == "nerfacto":
+            conf.pipeline.datamanager.dataparser = nerfstudio.data.dataparsers.nerfstudio_dataparser.NerfstudioDataParserConfig()
 
         main(conf)
 

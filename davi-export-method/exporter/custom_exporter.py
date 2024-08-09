@@ -33,10 +33,10 @@ from nerfstudio.utils.eval_utils import eval_setup
 from nerfstudio.utils.rich_utils import CONSOLE
 
 # custom methods
-import custom_tsdf_utils
-from custom_exporter_utils import generate_point_cloud
-# from .custom_exporter_utils import generate_point_cloud
-# from . import custom_tsdf_utils
+# import custom_tsdf_utils
+# from custom_exporter_utils import generate_point_cloud
+from .custom_exporter_utils import generate_point_cloud
+from . import custom_tsdf_utils
 
 @dataclass
 class Exporter:
