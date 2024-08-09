@@ -28,54 +28,11 @@ def error_handler(error: Exception, context: Context, next_step: NextStep):
     print(error)
     raise ValueError(error) from error
 
-# REQ
-def run_pipeline_big_training():
-    dataset_name = "hook"
-    model_name = "alex-silhouette-model"
-    input_data_path = "data/working/binarized_images_lowres/" + dataset_name
-    export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
 
-    ctx = get_new_context()
-
-    pipeline_pie = Pipeline[PipeContext](
-        Protocoller("started pipeline"),
-        # Actual NERF Training
-        NerfstudioTrainStarter(model=model_name,
-                               experiment_name="hook-big-training",
-                               data_path=input_data_path,
-                               steps_per_eval_batch=100,
-                               steps_per_save=2000,
-                               max_num_iterations=10000,
-                               use_optimized_sigmoid=True,
-                               use_weight_prioritization=False,
-                               renderer_sig_range=10.0,
-                               renderer_sig_offset=5.0,
-                               loss_method="L1",
-                               vis="tensorboard",
-                               export_postfix="_l1_oSig_no-normals_" + dataset_name,
-                               ),
-        Protocoller("trained BIG alex-silhouette-model L1. range=15.0, offset=5.0"),
-
-        NerfstudioTrainStarter(model=model_name,
-                               experiment_name="hook-big-training",
-                               data_path=input_data_path,
-                               steps_per_eval_batch=100,
-                               steps_per_save=2000,
-                               max_num_iterations=10000,
-                               use_optimized_sigmoid=False,
-                               use_weight_prioritization=False,
-                               renderer_sig_range=10.0,
-                               renderer_sig_offset=5.0,
-                               loss_method="L1",
-                               vis="tensorboard",
-                               export_postfix="_l1_pure_no-normals" + dataset_name,
-                               ),
-        Protocoller("trained BIG alex-silhouette-model L1 Pure"),
-
-        ProtocolAnalyzer(),
-    )
-    pipeline_pie(ctx, error_handler)
-
+#
+# Pipeline to fully run the whole process for a dnerf_data dataset
+# Download Dnerf Data using ns-download command
+#
 def run_demo_pipeline_with_dnerf_data(dataset):
     dataset_name = dataset
     model_name = "alex-silhouette-model"
@@ -126,17 +83,20 @@ def run_demo_pipeline_with_dnerf_data(dataset):
             export_config_base_dir=export_config_base_dir,
             export_type="tsdf",  # Choose the type of export: tsdf, poisson, marching-cubes
             rgb_output_name="bw",
-            # Add other parameters specific to the export type
         ),
         ProtocolAnalyzer(),
     )
     pipeline_pie(ctx, error_handler)
 
 
+#
+# Pipeline to fully run the whole process for a custom real world dataset
+# Contact the repository maintainers to get access to this dataset
+#
 def run_demo_pipeline_with_camera_data():
-    dataset_name = "lamp"
+    dataset_name = "wall-e"
     model_name = "alex-silhouette-model"
-    input_data_path = "data/working/binarized_images/" + dataset_name
+    input_data_path = "data/working/binarized_images_origres/" + dataset_name
     export_config_base_dir = "outputs/" + dataset_name + "/" + model_name
 
     ctx = get_new_context()
@@ -154,7 +114,7 @@ def run_demo_pipeline_with_camera_data():
         ImageBinarizerRMBGNoDepth("data/input/" + dataset_name + "/images_8",
                                   "data/working/binarized_images_origres/" + dataset_name + "/images_8"),
 
-        ## Move Camera Meta Files (DNERF specific)
+        # Move Camera Meta Files (DNERF specific)
         FileCopier("data/input/" + dataset_name + "/colmap",
                    "data/working/binarized_images_origres/" + dataset_name + "/colmap"),
         FileCopier("data/input/" + dataset_name + "/sparse_pc.ply",
@@ -164,27 +124,25 @@ def run_demo_pipeline_with_camera_data():
         Protocoller("prepared dataset"),
 
         # Actual NERF Training
-        #NerfstudioTrainStarter(model=model_name,
-        #                       experiment_name=dataset_name,
-        #                       data_path=input_data_path,
-        #                       use_optimized_sigmoid=True,
-        #                       use_weight_prioritization=False,
-        #                       renderer_sig_range=10.0,
-        #                       renderer_sig_offset=5.0,
-        #                       loss_method="L1",
-        #                       export_postfix="_l1_oSig_" + dataset_name,
-        #                       ),
-        #Protocoller("trained alex-silhouette-model L1. range=15.0, offset=5.0"),
+        NerfstudioTrainStarter(model=model_name,
+                               experiment_name=dataset_name,
+                               data_path=input_data_path,
+                               use_optimized_sigmoid=True,
+                               use_weight_prioritization=False,
+                               renderer_sig_range=10.0,
+                               renderer_sig_offset=5.0,
+                               loss_method="L1",
+                               export_postfix="_l1_oSig_" + dataset_name,
+                               ),
+        Protocoller("trained alex-silhouette-model L1. range=15.0, offset=5.0"),
 
         # Export the run
-
-        #MeshExporter(
-        #    export_config_base_dir=export_config_base_dir,
-        #    export_type="tsdf",  # Choose the type of export: tsdf, poisson, marching-cubes
-        #    rgb_output_name="bw",
-        #    # Add other parameters specific to the export type
-        #),
-        #ProtocolAnalyzer(),
+        MeshExporter(
+            export_config_base_dir=export_config_base_dir,
+            export_type="tsdf",  # Choose the type of export: tsdf, poisson, marching-cubes
+            rgb_output_name="bw",
+        ),
+        ProtocolAnalyzer(),
     )
     pipeline_pie(ctx, error_handler)
 

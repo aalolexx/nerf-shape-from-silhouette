@@ -15,7 +15,7 @@ import time
 #
 # Pipeline Preparations
 #
-# TODO actually use these path variables
+
 def get_new_context():
     return PipeContext(
         input_dir_path="data/input",
